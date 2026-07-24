@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flag Football Analytics</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar__brand">
+        <span class="sidebar__brand-dot"></span>
+        <div class="sidebar__brand-text">
+          FLAG FOOTBALL <span class="accent-text">ANALYTICS</span>
+        </div>
+      </div>
+
+      <nav class="sidebar__nav">
+        <div class="sidebar__nav-section">MENU UTAMA</div>
+        <button class="sidebar__nav-item is-active" data-view="dashboard">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1"></rect>
+            <rect x="14" y="3" width="7" height="5" rx="1"></rect>
+            <rect x="14" y="12" width="7" height="9" rx="1"></rect>
+            <rect x="3" y="16" width="7" height="5" rx="1"></rect>
+          </svg>
+          Dashboard
+        </button>
+
+        <div class="sidebar__nav-section">MASTER DATA</div>
+        <button class="sidebar__nav-item" data-view="team">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          Master Team
+        </button>
+        <button class="sidebar__nav-item" data-view="position">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="2" y1="12" x2="22" y2="12"></line>
+            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+          </svg>
+          Master Positions
+        </button>
+        <button class="sidebar__nav-item" data-view="player">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          Master Player
+        </button>
+      </nav>
+
+      <div class="sidebar__profile">
+        <div class="sidebar__profile-avatar">HC</div>
+        <div class="sidebar__profile-info">
+          <div class="sidebar__profile-name">Coach</div>
+          <div class="sidebar__profile-role">Head Coach</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+      <header class="main-header">
+        <div class="main-header__title">
+          <span class="main-header__eyebrow">Flag Football Stats</span>
+          <h1 id="view-title">Dashboard Overview</h1>
+        </div>
+        <div class="main-header__actions">
+          <div class="season-badge">Season 2024</div>
+          <button id="global-refresh-btn" class="btn-refresh">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Muat Ulang Data
+          </button>
+        </div>
+      </header>
+
+      <div class="content-body">
+        
+        <!-- ================= VIEW: DASHBOARD ================= -->
+        <section id="view-dashboard" class="view-panel is-active">
+          <!-- Stats Grid -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-card__icon team-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="stat-card__content">
+                <div class="stat-card__value" id="stat-teams">0</div>
+                <div class="stat-card__label">Total Tim</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card__icon player-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <div class="stat-card__content">
+                <div class="stat-card__value" id="stat-players">0</div>
+                <div class="stat-card__label">Total Pemain</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card__icon position-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                </svg>
+              </div>
+              <div class="stat-card__content">
+                <div class="stat-card__value" id="stat-positions">0</div>
+                <div class="stat-card__label">Total Posisi</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-card__icon plays-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+              </div>
+              <div class="stat-card__content">
+                <div class="stat-card__value" id="stat-plays">14</div>
+                <div class="stat-card__label">Playbook / Plays</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dashboard Grid -->
+          <div class="dashboard-grid">
+            <!-- Playbook Sketch Card -->
+            <div class="glass-card span-2">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Gameplay Paling Efektif</h3>
+                <span class="badge badge-accent">Trips Right - Slant/Flat</span>
+              </div>
+              <div class="glass-card__body gameplay-sketch-container">
+                <div class="field-diagram">
+                  <div class="line LOS"></div>
+                  <!-- Field Markers -->
+                  <div class="field-player defender" style="top: 25%; left: 35%;">FS</div>
+                  <div class="field-player defender" style="top: 35%; left: 55%;">CB</div>
+                  <div class="field-player defender" style="top: 45%; left: 40%;">LB</div>
+                  <div class="field-player defender" style="top: 50%; left: 70%;">CB</div>
+
+                  <div class="field-player offenseQB" style="top: 75%; left: 50%;">QB</div>
+                  <div class="field-player offense" style="top: 60%; left: 42%;">C</div>
+                  <div class="field-player offense" style="top: 60%; left: 65%;">WR (Rio)</div>
+                  <div class="field-player offense" style="top: 60%; left: 78%;">WR (Bima)</div>
+                  <div class="field-player offense" style="top: 60%; left: 90%;">WR (Fajar)</div>
+                  
+                  <!-- SVG drawing routes -->
+                  <svg class="routes-canvas" viewBox="0 0 500 200">
+                    <!-- QB dropback -->
+                    <path d="M 250 150 L 250 170" stroke="#f4b83f" stroke-width="2" stroke-dasharray="4" fill="none"/>
+                    
+                    <!-- WR Slant Route -->
+                    <path d="M 325 120 L 325 80 L 270 40" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+                    
+                    <!-- WR Flat Route -->
+                    <path d="M 390 120 L 390 100 L 450 90" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+                    <!-- C Route -->
+                    <path d="M 210 120 L 210 60 L 150 60" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
+
+                    <!-- Markers definition -->
+                    <defs>
+                      <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#7fd68a" />
+                      </marker>
+                    </defs>
+                  </svg>
+                </div>
+                <div class="gameplay-info">
+                  <div class="gameplay-stat">
+                    <div class="gameplay-stat__num">18x</div>
+                    <div class="gameplay-stat__label">Diputar</div>
+                  </div>
+                  <div class="gameplay-stat">
+                    <div class="gameplay-stat__num">15x (83%)</div>
+                    <div class="gameplay-stat__label">Sukses</div>
+                  </div>
+                  <div class="gameplay-stat">
+                    <div class="gameplay-stat__num">9.6 yds</div>
+                    <div class="gameplay-stat__label">Rata-rata Yards</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Top Performers Card -->
+            <div class="glass-card">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Top Performers</h3>
+              </div>
+              <div class="glass-card__body">
+                <ul class="performers-list">
+                  <li class="performer-item">
+                    <span class="performer-item__rank">1</span>
+                    <div class="performer-item__info">
+                      <div class="performer-item__name">Rio</div>
+                      <div class="performer-item__pos">WR</div>
+                    </div>
+                    <span class="performer-item__stat">420 yds</span>
+                  </li>
+                  <li class="performer-item">
+                    <span class="performer-item__rank">2</span>
+                    <div class="performer-item__info">
+                      <div class="performer-item__name">Bima</div>
+                      <div class="performer-item__pos">WR</div>
+                    </div>
+                    <span class="performer-item__stat">310 yds</span>
+                  </li>
+                  <li class="performer-item">
+                    <span class="performer-item__rank">3</span>
+                    <div class="performer-item__info">
+                      <div class="performer-item__name">Fajar</div>
+                      <div class="performer-item__pos">WR</div>
+                    </div>
+                    <span class="performer-item__stat">280 yds</span>
+                  </li>
+                  <li class="performer-item">
+                    <span class="performer-item__rank">4</span>
+                    <div class="performer-item__info">
+                      <div class="performer-item__name">Dani</div>
+                      <div class="performer-item__pos">QB</div>
+                    </div>
+                    <span class="performer-item__stat">150 yds</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: MASTER TEAM ================= -->
+        <section id="view-team" class="view-panel">
+          <div class="view-grid">
+            <!-- Team Form Card -->
+            <div class="glass-card form-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Tambah Tim Baru</h3>
+              </div>
+              <div class="glass-card__body">
+                <form id="team-form" class="vertical-form">
+                  <label>
+                    Nama Tim
+                    <input type="text" name="team_name" placeholder="Tigers Flag Football" required>
+                  </label>
+                  <label>
+                    Singkatan
+                    <input type="text" name="abbreviation" placeholder="TIGERS" required>
+                  </label>
+                  <label>
+                    Deskripsi Tim
+                    <input type="text" name="description" placeholder="Tim Flag Football Tigers Depok">
+                  </label>
+                  <label>
+                    Warna Utama Tim
+                    <div class="color-picker-container">
+                      <input type="color" name="primary_color" value="#f4b83f" class="color-input">
+                      <span class="color-value-preview">#f4b83f</span>
+                    </div>
+                  </label>
+                  
+                  <div class="form-actions">
+                    <button type="submit" id="team-submit-btn" class="btn-primary">Simpan Tim</button>
+                    <span id="team-form-status" class="form-status"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Team List Card -->
+            <div class="glass-card list-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Daftar Tim Terdaftar</h3>
+              </div>
+              <div class="glass-card__body">
+                <div class="teams-grid-container" id="team-list-grid">
+                  <div class="loading-state">Memuat data tim…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: MASTER PLAYER ================= -->
+        <section id="view-player" class="view-panel">
+          <div class="view-grid">
+            <!-- Player Form Card -->
+            <div class="glass-card form-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Tambah Pemain Baru</h3>
+              </div>
+              <div class="glass-card__body">
+                <form id="player-form" class="vertical-form">
+                  
+                  <label>
+                    Nama Lengkap
+                    <input type="text" name="name" placeholder="Nama lengkap pemain" required>
+                  </label>
+
+                  <label>
+                    Nickname
+                    <input type="text" name="nick_name" placeholder="Nama panggilan">
+                  </label>
+
+                  <label>
+                    Nomor Jersey
+                    <input type="number" name="jersey_number" placeholder="10" required>
+                  </label>
+
+                  <label>
+                    Sport
+                    <input type="text" name="sport" value="Flag Football" readonly required>
+                  </label>
+
+                  <label>
+                    Posisi Utama
+                    <select name="position" id="player-position-select" required>
+                      <option value="">Pilih Posisi Utama</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    Posisi Kedua (Opsional)
+                    <select name="secondary_position" id="player-secondary-position-select">
+                      <option value="">Pilih Posisi Kedua</option>
+                    </select>
+                  </label>
+
+                  <div class="form-row-2">
+                    <label>
+                      Tinggi (cm)
+                      <input type="number" name="height (cm)" placeholder="175">
+                    </label>
+                    <label>
+                      Berat (kg)
+                      <input type="number" name="weight (kg)" placeholder="70">
+                    </label>
+                  </div>
+
+                  <label>
+                    Tanggal Lahir
+                    <input type="text" name="birth_date" placeholder="DD/MM/YYYY">
+                  </label>
+
+                  <label>
+                    Tim
+                    <select name="team" id="player-team-select" required>
+                      <option value="">Pilih Tim</option>
+                    </select>
+                  </label>
+
+                  <div class="form-actions">
+                    <button type="submit" id="player-submit-btn" class="btn-primary">Simpan Pemain</button>
+                    <span id="player-form-status" class="form-status"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Player List Card -->
+            <div class="glass-card list-column span-large">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Daftar Roster Pemain</h3>
+              </div>
+              <div class="glass-card__body">
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>ID Pemain</th>
+                        <th>Nama</th>
+                        <th>Nickname</th>
+                        <th>No. Jersey</th>
+                        <th>Posisi</th>
+                        <th>Tim</th>
+                        <th>Tinggi / Berat</th>
+                      </tr>
+                    </thead>
+                    <tbody id="player-table-body">
+                      <tr><td colspan="8" class="table-empty">Memuat data pemain…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: MASTER POSITION ================= -->
+        <section id="view-position" class="view-panel">
+          <div class="view-grid">
+            <!-- Position Form Card -->
+            <div class="glass-card form-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Tambah Posisi Baru</h3>
+              </div>
+              <div class="glass-card__body">
+                <form id="position-form" class="vertical-form">
+                  <label>
+                    Nama Posisi
+                    <input type="text" name="position_name" placeholder="Wide Receiver" required>
+                  </label>
+                  <label>
+                    Singkatan
+                    <input type="text" name="abbreviation" placeholder="WR" required>
+                  </label>
+                  <label>
+                    Kategori Unit
+                    <select name="category" required>
+                      <option value="Offense">Offense (Penyerangan)</option>
+                      <option value="Defense">Defense (Pertahanan)</option>
+                      <option value="Special Teams">Special Teams</option>
+                    </select>
+                  </label>
+
+                  <div class="form-actions">
+                    <button type="submit" id="position-submit-btn" class="btn-primary">Simpan Posisi</button>
+                    <span id="position-form-status" class="form-status"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Position List Card -->
+            <div class="glass-card list-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Daftar Posisi</h3>
+              </div>
+              <div class="glass-card__body">
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>ID Posisi</th>
+                        <th>Nama Posisi</th>
+                        <th>Singkatan</th>
+                        <th>Kategori</th>
+                      </tr>
+                    </thead>
+                    <tbody id="position-table-body">
+                      <tr><td colspan="5" class="table-empty">Memuat data posisi…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
