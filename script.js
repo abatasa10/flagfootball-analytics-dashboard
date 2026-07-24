@@ -6,7 +6,7 @@ document.documentElement.setAttribute('data-theme', savedTheme);
 // GANTI URL INI dengan URL Web App dari Apps Script kamu
 // Bentuknya: https://script.google.com/macros/s/xxxxxxxxxx/exec
 // ==========================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbyFYjZdhlOZQJf7ua9mIVE_jo2NNbfrm38faP3itaIODyQbhsHIMfuB0xpaCJ0yuMFv/exec';
+const API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTWNxzWrqS_2nga8v-y5mi22eginmLHncv7Gw5vweLCrXAZdNKfA-TSDwx6sl3zX7oeJ9p-asw2cnSnjycNuceKp57zhFGSpOz3xiUFIy8XVYJXrtM9jpff_87rBLt-jSTBcB5A3hvn_I-AuJ6aJ46uLND9YK59beHdD6RenDDbUbYk0G75yQZIsmcrVuZSkw4Z-rLDKAlCusHr5Pj3xNE8uum6r26oW6lR2jc3ny_kHR2Gbd9ED-Ygo0q_CJCY6ePOFp0XcABn0q8mNtiuoqYlmZyOkg&lib=MWl42gq4fL-cFQ_WcHuMbEF1QH7Si4MpU';
 
 // Nama-nama sheet di Google Sheets
 const SHEET_PLAYERS = 'Master Player';
@@ -66,7 +66,7 @@ const viewTitlesMap = {
 navButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     const targetView = btn.getAttribute('data-view');
-    
+
     // Update active nav button
     navButtons.forEach(b => b.classList.remove('is-active'));
     btn.classList.add('is-active');
@@ -134,7 +134,7 @@ async function loadTeams() {
   try {
     const data = await fetchSheetData(SHEET_TEAMS);
     cache.teams = Array.isArray(data) ? data : [];
-    
+
     // Update Dashboard Stat
     statTeams.textContent = cache.teams.length;
 
@@ -151,7 +151,7 @@ async function loadTeams() {
       const name = team.team_name || '-';
       const abbr = team.abbreviation || 'T';
       const desc = team.description || 'Tidak ada deskripsi.';
-      
+
       return `
         <div class="team-badge-card">
           <div class="team-badge-card__color-bar" style="background: ${color};"></div>
@@ -177,7 +177,7 @@ async function loadPositions() {
   try {
     const data = await fetchSheetData(SHEET_POSITIONS);
     cache.positions = Array.isArray(data) ? data : [];
-    
+
     // Update Dashboard Stat
     statPositions.textContent = cache.positions.length;
 
@@ -248,7 +248,7 @@ async function loadPlayers() {
 function populateTeamSelect() {
   // Save current selection
   const currentVal = playerTeamSelect.value;
-  
+
   playerTeamSelect.innerHTML = '<option value="">Pilih Tim</option>';
   cache.teams.forEach(team => {
     if (team.team_name) {
@@ -276,7 +276,7 @@ function populatePositionSelects() {
       const opt = document.createElement('option');
       opt.value = pos.abbreviation;
       opt.textContent = `${pos.position_name} (${pos.abbreviation})`;
-      
+
       const opt2 = opt.cloneNode(true);
 
       playerPositionSelect.appendChild(opt);
@@ -308,7 +308,7 @@ async function submitFormData(sheetName, data, statusEl, submitBtn) {
 
     statusEl.textContent = 'Tersimpan ✓';
     statusEl.className = 'form-status ok';
-    
+
     // Clear status notification after 3 seconds
     setTimeout(() => {
       statusEl.textContent = '';
