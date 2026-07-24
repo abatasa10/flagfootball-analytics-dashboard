@@ -6,7 +6,7 @@ document.documentElement.setAttribute('data-theme', savedTheme);
 // GANTI URL INI dengan URL Web App dari Apps Script kamu
 // Bentuknya: https://script.google.com/macros/s/xxxxxxxxxx/exec
 // ==========================================================
-const API_URL = 'https://script.googleusercontent.com/macros/echo?user_content_key=AUkAhnTWNxzWrqS_2nga8v-y5mi22eginmLHncv7Gw5vweLCrXAZdNKfA-TSDwx6sl3zX7oeJ9p-asw2cnSnjycNuceKp57zhFGSpOz3xiUFIy8XVYJXrtM9jpff_87rBLt-jSTBcB5A3hvn_I-AuJ6aJ46uLND9YK59beHdD6RenDDbUbYk0G75yQZIsmcrVuZSkw4Z-rLDKAlCusHr5Pj3xNE8uum6r26oW6lR2jc3ny_kHR2Gbd9ED-Ygo0q_CJCY6ePOFp0XcABn0q8mNtiuoqYlmZyOkg&lib=MWl42gq4fL-cFQ_WcHuMbEF1QH7Si4MpU';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxELg6fF23TpdQjfDlRT_I6WmNaFi2u5FPmdil2lu_zCv6bN4wbWIhddqvg8MDjmuY9/exec';
 
 // Nama-nama sheet di Google Sheets
 const SHEET_PLAYERS = 'Master Player';
