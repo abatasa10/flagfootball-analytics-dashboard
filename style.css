@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
 
 :root {
+  /* Dark mode (default) variables */
   --bg-app: #080b11;
   --bg-sidebar: #05070a;
   --bg-main: radial-gradient(circle at 50% 0%, #101622 0%, #070a0e 100%);
@@ -17,6 +18,34 @@
   --danger: #ef4444;
   --radius: 12px;
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  --input-bg: rgba(0, 0, 0, 0.25);
+  --team-card-bg: rgba(255, 255, 255, 0.02);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.03);
+  --nav-active-text: #0d1117;
+  --header-bg: rgba(8, 11, 17, 0.7);
+}
+
+:root[data-theme="light"] {
+  /* Light mode variables */
+  --bg-app: #f8fafc;
+  --bg-sidebar: #ffffff;
+  --bg-main: radial-gradient(circle at 50% 0%, #f1f5f9 0%, #e2e8f0 100%);
+  --card-bg: rgba(255, 255, 255, 0.7);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --card-border-hover: rgba(244, 184, 63, 0.5);
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --accent: #d97706;
+  --accent-rgb: 217, 119, 6;
+  --accent-hover: #b45309;
+  
+  --input-bg: #ffffff;
+  --team-card-bg: #ffffff;
+  --sidebar-hover-bg: rgba(0, 0, 0, 0.04);
+  --nav-active-text: #ffffff;
+  --header-bg: rgba(248, 250, 252, 0.85);
 }
 
 * {
@@ -125,13 +154,13 @@ body {
 
 .sidebar__nav-item:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--sidebar-hover-bg);
 }
 
 .sidebar__nav-item.is-active {
-  color: #0d1117;
+  color: var(--nav-active-text);
   background-color: var(--accent);
-  box-shadow: 0 4px 14px rgba(244, 184, 63, 0.3);
+  box-shadow: 0 4px 14px rgba(var(--accent-rgb), 0.3);
   font-weight: 600;
 }
 
@@ -200,7 +229,7 @@ body {
   align-items: center;
   padding: 24px 32px;
   border-bottom: 1px solid var(--card-border);
-  background: rgba(8, 11, 17, 0.7);
+  background: var(--header-bg);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
@@ -268,6 +297,31 @@ body {
 .btn-refresh:hover svg {
   transform: rotate(180deg);
 }
+
+.btn-theme-toggle {
+  background: transparent;
+  border: 1px solid var(--card-border);
+  color: var(--text-secondary);
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-theme-toggle:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+/* Light/Dark mode toggling icon display */
+:root[data-theme="light"] .theme-icon-sun { display: none; }
+:root[data-theme="light"] .theme-icon-moon { display: block; }
+:root:not([data-theme="light"]) .theme-icon-sun { display: block; }
+:root:not([data-theme="light"]) .theme-icon-moon { display: none; }
 
 /* ---------- Content Body ---------- */
 .content-body {
@@ -597,7 +651,7 @@ body {
 
 .vertical-form input,
 .vertical-form select {
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 6px;
   padding: 10px 14px;
@@ -709,7 +763,7 @@ body {
 }
 
 .team-badge-card {
-  background: rgba(255,255,255,0.02);
+  background: var(--team-card-bg);
   border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 18px;

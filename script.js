@@ -1,3 +1,7 @@
+// Inisialisasi tema sebelum render halaman
+const savedTheme = localStorage.getItem('theme') || 'dark';
+document.documentElement.setAttribute('data-theme', savedTheme);
+
 // ==========================================================
 // GANTI URL INI dengan URL Web App dari Apps Script kamu
 // Bentuknya: https://script.google.com/macros/s/xxxxxxxxxx/exec
@@ -369,6 +373,17 @@ const colorLabel = document.querySelector('.color-value-preview');
 if (colorPicker && colorLabel) {
   colorPicker.addEventListener('input', (e) => {
     colorLabel.textContent = e.target.value.toUpperCase();
+  });
+}
+
+// Theme Toggle Action
+const themeToggleBtn = document.getElementById('theme-toggle-btn');
+if (themeToggleBtn) {
+  themeToggleBtn.addEventListener('click', () => {
+    const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', newTheme);
+    localStorage.setItem('theme', newTheme);
   });
 }
 
