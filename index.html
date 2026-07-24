@@ -48,6 +48,20 @@
           </svg>
           Master Positions
         </button>
+        <button class="sidebar__nav-item" data-view="route">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+          </svg>
+          Master Route
+        </button>
+        <button class="sidebar__nav-item" data-view="playbook">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+          Master Playbook
+        </button>
         <button class="sidebar__nav-item" data-view="player">
           <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -146,6 +160,19 @@
             </div>
 
             <div class="stat-card">
+              <div class="stat-card__icon route-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                  <polyline points="2 17 12 22 22 17"></polyline>
+                </svg>
+              </div>
+              <div class="stat-card__content">
+                <div class="stat-card__value" id="stat-routes">0</div>
+                <div class="stat-card__label">Total Rute</div>
+              </div>
+            </div>
+
+            <div class="stat-card">
               <div class="stat-card__icon plays-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
                   <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
@@ -153,8 +180,8 @@
                 </svg>
               </div>
               <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-plays">14</div>
-                <div class="stat-card__label">Playbook / Plays</div>
+                <div class="stat-card__value" id="stat-playbook">0</div>
+                <div class="stat-card__label">Total Playbook</div>
               </div>
             </div>
           </div>
@@ -298,6 +325,7 @@
                   
                   <div class="form-actions">
                     <button type="submit" id="team-submit-btn" class="btn-primary">Simpan Tim</button>
+                    <button type="button" id="team-cancel-btn" class="btn-cancel" style="display: none;">Batal</button>
                     <span id="team-form-status" class="form-status"></span>
                   </div>
                 </form>
@@ -388,6 +416,7 @@
 
                   <div class="form-actions">
                     <button type="submit" id="player-submit-btn" class="btn-primary">Simpan Pemain</button>
+                    <button type="button" id="player-cancel-btn" class="btn-cancel" style="display: none;">Batal</button>
                     <span id="player-form-status" class="form-status"></span>
                   </div>
                 </form>
@@ -412,6 +441,7 @@
                         <th>Posisi</th>
                         <th>Tim</th>
                         <th>Tinggi / Berat</th>
+                        <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="player-table-body">
@@ -453,6 +483,7 @@
 
                   <div class="form-actions">
                     <button type="submit" id="position-submit-btn" class="btn-primary">Simpan Posisi</button>
+                    <button type="button" id="position-cancel-btn" class="btn-cancel" style="display: none;">Batal</button>
                     <span id="position-form-status" class="form-status"></span>
                   </div>
                 </form>
@@ -474,6 +505,7 @@
                         <th>Nama Posisi</th>
                         <th>Singkatan</th>
                         <th>Kategori</th>
+                        <th>Aksi</th>
                       </tr>
                     </thead>
                     <tbody id="position-table-body">
@@ -486,8 +518,227 @@
           </div>
         </section>
 
+        <!-- ================= VIEW: MASTER ROUTE ================= -->
+        <section id="view-route" class="view-panel">
+          <div class="view-grid">
+            <!-- Route Form Card -->
+            <div class="glass-card form-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Tambah Rute Baru</h3>
+              </div>
+              <div class="glass-card__body">
+                <form id="route-form" class="vertical-form">
+                  <label>
+                    Nama Rute
+                    <input type="text" name="route_name" placeholder="Slant" required>
+                  </label>
+                  <label>
+                    Singkatan
+                    <input type="text" name="abbreviation" placeholder="SL" required>
+                  </label>
+                  <label>
+                    Kategori Rute
+                    <select name="category" required>
+                      <option value="">Pilih Kategori</option>
+                      <option value="Short">Short</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Deep">Deep</option>
+                      <option value="Screen">Screen</option>
+                    </select>
+                  </label>
+                  <label>
+                    Tipe Rute
+                    <select name="route_type" required>
+                      <option value="">Pilih Tipe</option>
+                      <option value="Breaking Inside">Breaking Inside</option>
+                      <option value="Breaking Outside">Breaking Outside</option>
+                      <option value="Vertical">Vertical</option>
+                      <option value="Stop">Stop</option>
+                      <option value="Flat">Flat</option>
+                    </select>
+                  </label>
+                  <label>
+                    Deskripsi Rute
+                    <input type="text" name="description" placeholder="Lari lurus lalu belok 45 derajat ke dalam">
+                  </label>
+                  <label>
+                    Status
+                    <select name="status" required>
+                      <option value="Aktif">Aktif</option>
+                      <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                  </label>
+
+                  <div class="form-actions">
+                    <button type="submit" id="route-submit-btn" class="btn-primary">Simpan Rute</button>
+                    <button type="button" id="route-cancel-btn" class="btn-cancel" style="display: none;">Batal</button>
+                    <span id="route-form-status" class="form-status"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Route List Card -->
+            <div class="glass-card list-column span-large">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Daftar Rute</h3>
+              </div>
+              <div class="glass-card__body">
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>ID Rute</th>
+                        <th>Nama Rute</th>
+                        <th>Singkatan</th>
+                        <th>Kategori</th>
+                        <th>Tipe Rute</th>
+                        <th>Deskripsi</th>
+                        <th>Status</th>
+                        <th>Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody id="route-table-body">
+                      <tr><td colspan="9" class="table-empty">Memuat data rute…</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= VIEW: MASTER PLAYBOOK ================= -->
+        <section id="view-playbook" class="view-panel">
+          <div class="view-grid">
+            <!-- Playbook Form Card -->
+            <div class="glass-card form-column">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Tambah Playbook Baru</h3>
+              </div>
+              <div class="glass-card__body">
+                <form id="playbook-form" class="vertical-form">
+                  <label>
+                    Nama Play
+                    <input type="text" name="play_name" placeholder="Trips Right - Slant/Flat" required>
+                  </label>
+                  <label>
+                    Formasi
+                    <input type="text" name="formation" placeholder="Trips Right" required>
+                  </label>
+                  <div class="form-row-2">
+                    <label>
+                      Offense Type
+                      <select name="offense_type" required>
+                        <option value="Pass">Pass</option>
+                        <option value="Run">Run</option>
+                        <option value="RPO">RPO</option>
+                        <option value="Trick Play">Trick Play</option>
+                      </select>
+                    </label>
+                    <label>
+                      Kategori Play
+                      <select name="play_category" required>
+                        <option value="Short">Short</option>
+                        <option value="Intermediate">Intermediate</option>
+                        <option value="Deep">Deep</option>
+                        <option value="Screen">Screen</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label>
+                    Deskripsi
+                    <input type="text" name="description" placeholder="Slant/Flat combination on right side">
+                  </label>
+                  <label>
+                    Upload Diagram Taktik (Gambar)
+                    <input type="file" id="playbook-image-file" accept="image/*" style="padding: 6px;">
+                    <input type="hidden" name="image" id="playbook-image-url">
+                  </label>
+                  <div id="playbook-image-preview-container" style="display: none; margin-top: 8px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Preview File Baru:</div>
+                    <img id="playbook-image-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 6px; border: 1px solid var(--card-border);">
+                  </div>
+                  <label>
+                    Status
+                    <select name="active" required>
+                      <option value="Aktif">Aktif</option>
+                      <option value="Nonaktif">Nonaktif</option>
+                    </select>
+                  </label>
+
+                  <!-- Modal Trigger Button -->
+                  <div style="margin-top: 16px; margin-bottom: 16px;">
+                    <button type="button" id="open-assignments-modal-btn" class="action-btn edit" style="width: 100%; padding: 12px; font-size: 0.8rem; font-weight: bold; border-style: dashed; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+                        <path d="M12 5v14M5 12h14"></path>
+                      </svg>
+                      Atur Penugasan Rute (<span id="assignments-count-label">0</span> aktif)
+                    </button>
+                  </div>
+
+                  <div class="form-actions" style="margin-top: 20px;">
+                    <button type="submit" id="playbook-submit-btn" class="btn-primary">Simpan Playbook</button>
+                    <button type="button" id="playbook-cancel-btn" class="btn-cancel" style="display: none;">Batal</button>
+                    <span id="playbook-form-status" class="form-status"></span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <!-- Playbook List Grid Card -->
+            <div class="glass-card list-column span-large">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Daftar Playbook</h3>
+              </div>
+              <div class="glass-card__body">
+                <div class="playbook-grid-container" id="playbook-list-grid">
+                  <div class="loading-state">Memuat data playbook…</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
     </main>
+  </div>
+
+  <!-- ================= POPUP MODAL: PLAYBOOK ASSIGNMENTS ================= -->
+  <div id="playbook-assignments-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-card__header">
+        <h3 class="modal-card__title">Atur Penugasan Rute</h3>
+        <button type="button" class="modal-card__close-btn" id="close-assignments-modal-btn">&times;</button>
+      </div>
+      <div class="modal-card__body">
+        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
+          Tentukan rute taktis untuk setiap receiver (X, Y, Z, C, QB) pada taktik ini.
+        </p>
+        
+        <!-- Image Preview Reference -->
+        <div id="modal-playbook-image-preview-container" style="display: none; margin-bottom: 16px;">
+          <div style="font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px;">Diagram Referensi Taktik:</div>
+          <div class="playbook-card__diagram" style="height: 140px; border: 1px solid var(--card-border); background: #091710;">
+            <img id="modal-playbook-image-preview" src="" style="width: 100%; height: 100%; object-fit: contain;">
+          </div>
+        </div>
+
+        <div id="assignment-rows-container" style="display: flex; flex-direction: column; gap: 10px;">
+          <!-- Dynamic rows populated by script.js -->
+        </div>
+        
+        <button type="button" id="add-assignment-row-btn" class="action-btn edit" style="margin-top: 16px; width: 100%; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          + Tambah Penugasan Rute
+        </button>
+      </div>
+      <div class="modal-card__footer">
+        <button type="button" id="save-assignments-modal-btn" class="btn-primary" style="width: 100%; padding: 12px; font-weight: bold;">
+          Simpan Penugasan & Tutup
+        </button>
+      </div>
+    </div>
   </div>
 
   <script src="script.js"></script>
