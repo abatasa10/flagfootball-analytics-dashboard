@@ -36,6 +36,14 @@
           </svg>
           Session
         </button>
+        <button class="sidebar__nav-item" data-view="player-analysis">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+            <line x1="8" y1="11" x2="16" y2="11"></line>
+          </svg>
+          Player Analysis
+        </button>
 
         <div class="sidebar__nav-section">MASTER DATA</div>
         <button class="sidebar__nav-item" data-view="team">
@@ -286,6 +294,107 @@
 
           </div>
 
+        </section>
+
+        <!-- ================= VIEW: PLAYER ANALYSIS ================= -->
+        <section id="view-player-analysis" class="view-panel">
+          <!-- Selection & Description -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
+            <div>
+              <h2 style="font-family: 'Oswald', sans-serif; font-size: 1.1rem; font-weight: 700; margin: 0; color: var(--accent); letter-spacing: 0.5px; text-transform: uppercase;">ANALISIS PER PEMAIN</h2>
+              <span style="font-size: 0.72rem; color: var(--text-muted);">Lihat detail performa dan rangkuman kekuatan setiap pemain.</span>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span style="font-size: 0.78rem; color: var(--text-secondary); font-weight: 600;">Pilih Pemain:</span>
+              <select id="analysis-player-select" style="padding: 6px 12px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem; min-width: 180px;">
+                <!-- Dynamically loaded options -->
+              </select>
+            </div>
+          </div>
+
+          <!-- Main Layout Grid -->
+          <div class="player-analysis-grid">
+            
+            <!-- Left Side: Profile -->
+            <div class="glass-card">
+              <div class="glass-card__body" style="display: flex; flex-direction: column; align-items: center; padding: 24px 16px;">
+                <!-- Avatar Circle -->
+                <div class="player-avatar-hud" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 3px solid var(--accent); box-shadow: 0 0 15px rgba(244, 184, 63, 0.2); margin-bottom: 16px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3);">
+                  <!-- SVG placeholder for avatar if image not available -->
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="48" height="48" style="color: var(--text-muted);">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                  </svg>
+                </div>
+                
+                <h3 id="analysis-player-name" style="font-family: 'Oswald', sans-serif; font-size: 1.25rem; font-weight: 700; margin: 0 0 4px 0; color: var(--text-primary);">Pemain</h3>
+                <span id="analysis-player-pos" style="font-size: 0.75rem; color: var(--accent); text-transform: uppercase; font-weight: 700; margin-bottom: 20px;">Position (#0)</span>
+                
+                <!-- Profile details table -->
+                <div style="width: 100%; border-top: 1px solid var(--card-border); padding-top: 16px;">
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted);">Height</span>
+                    <strong id="analysis-player-height" style="color: var(--text-primary);">- cm</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted);">Weight</span>
+                    <strong id="analysis-player-weight" style="color: var(--text-primary);">- kg</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted);">Hand</span>
+                    <strong id="analysis-player-hand" style="color: var(--text-primary);">Right</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted);">Experience</span>
+                    <strong id="analysis-player-year" style="color: var(--text-primary);">Active</strong>
+                  </div>
+                  <div style="display: flex; justify-content: space-between; padding: 8px 0; font-size: 0.78rem;">
+                    <span style="color: var(--text-muted);">Status</span>
+                    <strong id="analysis-player-status" style="color: #10b981;">Aktif</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Right Side: Performance overview & Strength/Weakness -->
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+              
+              <!-- PERFORMANCE OVERVIEW Box -->
+              <div class="glass-card">
+                <div class="glass-card__header">
+                  <h3 class="glass-card__title">PERFORMANCE OVERVIEW</h3>
+                </div>
+                <div class="glass-card__body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 12px; padding: 16px;" id="analysis-overview-container">
+                  <!-- Dynamic metrics populated here -->
+                </div>
+              </div>
+
+              <!-- STRENGTHS & WEAKNESSES Box -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;" class="analysis-resume-grid">
+                <!-- Strength -->
+                <div class="glass-card">
+                  <div class="glass-card__header" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <h3 class="glass-card__title" style="color: #10b981; font-weight: 700; text-transform: uppercase;">KEKUATAN (STRENGTH)</h3>
+                  </div>
+                  <div class="glass-card__body" style="display: flex; flex-direction: column; gap: 12px; padding: 16px;" id="analysis-strengths-list">
+                    <!-- Dynamic strengths -->
+                  </div>
+                </div>
+
+                <!-- Weakness -->
+                <div class="glass-card">
+                  <div class="glass-card__header" style="border-bottom: 1px solid rgba(255,255,255,0.02);">
+                    <h3 class="glass-card__title" style="color: #ef4444; font-weight: 700; text-transform: uppercase;">KELEMAHAN (WEAKNESS)</h3>
+                  </div>
+                  <div class="glass-card__body" style="display: flex; flex-direction: column; gap: 12px; padding: 16px;" id="analysis-weaknesses-list">
+                    <!-- Dynamic weaknesses -->
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
         </section>
 
         <!-- ================= VIEW: MASTER TEAM ================= -->

@@ -1664,3 +1664,36 @@ body {
     grid-template-columns: 1fr !important;
   }
 }
+
+/* ---------- 5d. Player Analysis View Styles ---------- */
+.player-analysis-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.player-avatar-hud {
+  position: relative;
+  transition: transform 0.3s ease, border-color 0.3s ease;
+}
+
+.player-avatar-hud:hover {
+  transform: scale(1.05);
+  border-color: var(--accent) !important;
+}
+
+.analysis-resume-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .player-analysis-grid {
+    grid-template-columns: 1fr;
+  }
+  .analysis-resume-grid {
+    grid-template-columns: 1fr;
+  }
+}

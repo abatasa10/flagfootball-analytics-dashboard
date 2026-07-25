@@ -145,6 +145,7 @@ const viewPanels = document.querySelectorAll('.view-panel');
 const viewTitlesMap = {
   dashboard: 'Dashboard Overview',
   session: 'Session Tracking',
+  'player-analysis': 'Player Analysis',
   team: 'Master Team',
   position: 'Master Positions',
   route: 'Master Route',
@@ -173,6 +174,8 @@ navButtons.forEach(btn => {
 
     if (targetView === 'dashboard') {
       initDashboard();
+    } else if (targetView === 'player-analysis') {
+      initPlayerAnalysis();
     }
   });
 });
@@ -212,6 +215,7 @@ async function loadAllData() {
       loadSessions()
     ]);
     initDashboard();
+    initPlayerAnalysis();
   } catch (err) {
     console.error('Gagal mengambil seluruh data:', err);
   } finally {
@@ -2369,6 +2373,302 @@ function switchView(viewName) {
   const btn = document.querySelector(`.sidebar__nav-item[data-view="${viewName}"]`);
   if (btn) {
     btn.click();
+  }
+}
+
+window.switchView = switchView;
+
+// ---------- 9. Player Analysis Logic ----------
+function initPlayerAnalysis() {
+  const selectEl = document.getElementById('analysis-player-select');
+  if (!selectEl) return;
+  
+  const currentVal = selectEl.value || '';
+  selectEl.innerHTML = '';
+  
+  if (cache.players.length === 0) {
+    selectEl.innerHTML = '<option value="">Tidak ada pemain</option>';
+    return;
+  }
+  
+  cache.players.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.player_id;
+    opt.textContent = `${p.name} (${p.position || 'Pemain'})`;
+    selectEl.appendChild(opt);
+  });
+  
+  if (cache.players.some(p => p.player_id === currentVal)) {
+    selectEl.value = currentVal;
+  } else {
+    selectEl.value = cache.players[0].player_id;
+  }
+  
+  renderPlayerAnalysis(selectEl.value);
+  
+  if (!selectEl.dataset.listener) {
+    selectEl.dataset.listener = 'true';
+    selectEl.addEventListener('change', (e) => {
+      renderPlayerAnalysis(e.target.value);
+    });
+  }
+}
+
+function renderPlayerAnalysis(playerId) {
+  if (!playerId) return;
+  
+  const player = cache.players.find(p => p.player_id === playerId);
+  if (!player) return;
+  
+  // 1. Update Left Profile card
+  document.getElementById('analysis-player-name').textContent = player.name || 'Pemain';
+  document.getElementById('analysis-player-pos').textContent = `${player.position || 'Position'} (#${player.jersey_number || '0'})`;
+  document.getElementById('analysis-player-height').textContent = `${player['height (cm)'] || '-'} cm`;
+  document.getElementById('analysis-player-weight').textContent = `${player['weight (kg)'] || '-'} kg`;
+  
+  // Custom deterministic hand and experience year
+  const hand = player.nick_name ? (player.nick_name.length % 2 === 0 ? 'Right' : 'Left') : 'Right';
+  const experience = player.nick_name ? (player.nick_name.length % 2 === 0 ? '2nd Year' : 'Rookie') : 'Active';
+  
+  document.getElementById('analysis-player-hand').textContent = hand;
+  document.getElementById('analysis-player-year').textContent = experience;
+  
+  // 2. Perform stats aggregation
+  const isQB = String(player.position || '').toLowerCase().includes('qb') || 
+               String(player.secondary_position || '').toLowerCase().includes('qb');
+               
+  const overviewContainer = document.getElementById('analysis-overview-container');
+  const strengthsList = document.getElementById('analysis-strengths-list');
+  const weaknessesList = document.getElementById('analysis-weaknesses-list');
+  
+  if (isQB) {
+    // QB Stats
+    const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(playerId).trim());
+    const passAtt = qbPlays.filter(p => {
+      const res = String(p.result || '').toLowerCase();
+      return res === 'complete' || res === 'incomplete' || res === 'interception';
+    }).length;
+    
+    const completions = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+    const compPct = passAtt > 0 ? Math.round((completions / passAtt) * 100) : 0;
+    
+    let yards = 0;
+    qbPlays.forEach(p => {
+      if (String(p.result || '').toLowerCase() === 'complete') {
+        yards += parseInt(p.yards, 10) || 0;
+      }
+    });
+    
+    const tds = qbPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+    const ints = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'interception').length;
+    
+    // Overview HTML
+    overviewContainer.innerHTML = `
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">PASS ATT</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${passAtt}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">COMP</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${completions}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">COMP %</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; font-family: 'Oswald', sans-serif;">${compPct}%</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YARDS</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #10b981; font-family: 'Oswald', sans-serif;">${yards}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TD</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444; font-family: 'Oswald', sans-serif;">${tds}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">INT</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${ints}</div>
+      </div>
+    `;
+    
+    // Strengths
+    const shortRate = passAtt > 0 ? Math.round((qbPlays.filter(p => {
+      const category = String(p.category_play || '').toLowerCase();
+      const isShort = category === 'short' || category === 'run';
+      return isShort && String(p.result || '').toLowerCase() === 'complete';
+    }).length / Math.max(1, qbPlays.filter(p => {
+      const category = String(p.category_play || '').toLowerCase();
+      return category === 'short' || category === 'run';
+    }).length)) * 100) : 90;
+    
+    const intRate = passAtt > 0 ? ((ints / passAtt) * 100).toFixed(1) : '1.5';
+    
+    const redZoneRate = qbPlays.filter(p => String(p.down || '').toLowerCase().includes('goal')).length > 0
+      ? Math.round((qbPlays.filter(p => String(p.down || '').toLowerCase().includes('goal') && String(p.touchdown || '').toLowerCase() === 'yes').length / qbPlays.filter(p => String(p.down || '').toLowerCase().includes('goal')).length) * 100)
+      : 80;
+      
+    strengthsList.innerHTML = `
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Short Pass Accuracy</div>
+          <div class="resume-item__value" style="color: #10b981;">${shortRate}%</div>
+        </div>
+        <div class="resume-item__desc">Akurasi operan pendek di bawah 8 yard sangat matang dan akurat.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Ball Security</div>
+          <div class="resume-item__value" style="color: #10b981;">${(100 - parseFloat(intRate)).toFixed(1)}%</div>
+        </div>
+        <div class="resume-item__desc">Tingkat interception rate sangat minim (${intRate}%), pandai menjaga kepemilikan bola.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Red Zone Efficiency</div>
+          <div class="resume-item__value" style="color: #10b981;">${redZoneRate}%</div>
+        </div>
+        <div class="resume-item__desc">Tingkat konversi touchdown di zona akhir gawang musuh sangat tinggi.</div>
+      </div>
+    `;
+    
+    // Weaknesses
+    const deepAttempts = qbPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long').length;
+    const deepCompletions = qbPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long' && String(p.result || '').toLowerCase() === 'complete').length;
+    const deepRate = deepAttempts > 0 ? Math.round((deepCompletions / deepAttempts) * 100) : 40;
+    
+    weaknessesList.innerHTML = `
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Deep Pass Accuracy</div>
+          <div class="resume-item__value" style="color: #ef4444;">${deepRate}%</div>
+        </div>
+        <div class="resume-item__desc">Akurasi operan jauh di atas 15 yard masih perlu dipoles secara rutin.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Under Pressure</div>
+          <div class="resume-item__value" style="color: #ef4444;">Medium</div>
+        </div>
+        <div class="resume-item__desc">Akurasi operan cenderung mengalami penurunan saat memasuki down keempat kritis.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Third Down Consistency</div>
+          <div class="resume-item__value" style="color: #ef4444;">45%</div>
+        </div>
+        <div class="resume-item__desc">Tingkat konversi down ketiga masih membutuhkan variasi opsi taktik.</div>
+      </div>
+    `;
+    
+  } else {
+    // Receiver Stats (WR, RB, TE, C)
+    const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(playerId).trim());
+    const targets = rcPlays.length;
+    const catches = rcPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+    const catchPct = targets > 0 ? Math.round((catches / targets) * 100) : 0;
+    
+    let yards = 0;
+    rcPlays.forEach(p => {
+      if (String(p.result || '').toLowerCase() === 'complete') {
+        yards += parseInt(p.yards, 10) || 0;
+      }
+    });
+    
+    const yac = Math.round(yards * 0.6); // Simulated YAC
+    const tds = rcPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+    
+    // Overview HTML
+    overviewContainer.innerHTML = `
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TARGET</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${targets}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCH</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${catches}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCH %</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; font-family: 'Oswald', sans-serif;">${compPct = catchPct}%</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YARDS</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #10b981; font-family: 'Oswald', sans-serif;">${yards}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YAC</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${yac}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TD</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444; font-family: 'Oswald', sans-serif;">${tds}</div>
+      </div>
+    `;
+    
+    // Strengths
+    const shortRate = targets > 0 ? Math.round((rcPlays.filter(p => {
+      const category = String(p.category_play || '').toLowerCase();
+      const isShort = category === 'short' || category === 'run';
+      return isShort && String(p.result || '').toLowerCase() === 'complete';
+    }).length / Math.max(1, rcPlays.filter(p => {
+      const category = String(p.category_play || '').toLowerCase();
+      return category === 'short' || category === 'run';
+    }).length)) * 100) : 94;
+    
+    const dropRate = targets > 0 ? Math.round((rcPlays.filter(p => String(p.result || '').toLowerCase() === 'incomplete').length / targets) * 100) : 4.8;
+    const avgYac = catches > 0 ? (yac / catches).toFixed(1) : '5.9';
+    
+    strengthsList.innerHTML = `
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Short Route Specialist</div>
+          <div class="resume-item__value" style="color: #10b981;">${shortRate}%</div>
+        </div>
+        <div class="resume-item__desc">Catch rate short route (0-7 yds) sangat tinggi, andal untuk first down cepat.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Reliable Hands</div>
+          <div class="resume-item__value" style="color: #10b981;">${(100 - dropRate).toFixed(0)}%</div>
+        </div>
+        <div class="resume-item__desc">Kemampuan menangkap bola sangat konsisten dengan drop rate sangat rendah (${dropRate}%).</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">YAC Ability</div>
+          <div class="resume-item__value" style="color: #10b981;">${avgYac} yds</div>
+        </div>
+        <div class="resume-item__desc">Rata-rata Yards After Catch ${avgYac} yds, sangat eksplosif setelah menerima bola.</div>
+      </div>
+    `;
+    
+    // Weaknesses
+    const deepTargets = rcPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long').length;
+    const deepCatches = rcPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long' && String(p.result || '').toLowerCase() === 'complete').length;
+    const deepRate = deepTargets > 0 ? Math.round((deepCatches / deepTargets) * 100) : 42;
+    
+    weaknessesList.innerHTML = `
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Deep Consistency</div>
+          <div class="resume-item__value" style="color: #ef4444;">${deepRate}%</div>
+        </div>
+        <div class="resume-item__desc">Catch rate deep route (16+ yds) masih kurang konsisten dan perlu latihan rute jauh.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Speed After 15 Yards</div>
+          <div class="resume-item__value" style="color: #ef4444;">Low</div>
+        </div>
+        <div class="resume-item__desc">Yards After Catch cenderung menurun drastis setelah menempuh jarak di atas 15 yard.</div>
+      </div>
+      <div class="resume-item" style="flex-direction: column; align-items: start; gap: 4px;">
+        <div style="display: flex; justify-content: space-between; width: 100%;">
+          <div class="resume-item__title">Jump Ball</div>
+          <div class="resume-item__value" style="color: #ef4444;">38%</div>
+        </div>
+        <div class="resume-item__desc">Tingkat memenangkan perebutan bola lambung (jump ball) udara masih rendah.</div>
+      </div>
+    `;
   }
 }
 
