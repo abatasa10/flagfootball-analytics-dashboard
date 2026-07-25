@@ -1251,6 +1251,36 @@ body {
   align-items: center;
 }
 
+.btn-add-play-to-drive {
+  background: rgba(244, 184, 63, 0.1) !important;
+  color: var(--accent) !important;
+  border: 1px solid rgba(244, 184, 63, 0.25) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.btn-add-play-to-drive:hover {
+  background: var(--accent) !important;
+  color: #111 !important;
+  box-shadow: 0 0 10px rgba(244, 184, 63, 0.3);
+}
+
+.btn-remove-drive {
+  background: rgba(239, 68, 68, 0.08) !important;
+  color: var(--danger) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2) !important;
+  border-radius: 6px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.btn-remove-drive:hover {
+  background: var(--danger) !important;
+  color: white !important;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
 .drive-card__title {
   font-family: 'Oswald', sans-serif;
   font-size: 0.95rem;
@@ -1271,50 +1301,89 @@ body {
 }
 
 .play-card {
-  background: rgba(255, 255, 255, 0.01);
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 6px;
-  padding: 14px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--card-border);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 18px;
   position: relative;
   transition: var(--transition);
 }
 
 .play-card:hover {
-  border-color: rgba(244, 184, 63, 0.2);
-  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(244, 184, 63, 0.35);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
 .play-card__header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
-  border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
-  padding-bottom: 8px;
+  margin-bottom: 16px;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-bottom: 10px;
 }
 
 .play-card__title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--text-secondary);
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--accent);
 }
 
 .play-card__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.play-card label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.play-card select,
+.play-card input {
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  font-family: inherit;
+  transition: var(--transition);
+  width: 100%;
+}
+
+.play-card select:focus,
+.play-card input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(244, 184, 63, 0.15);
+}
+
+.play-card__col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 .play-card__conditional {
   grid-column: 1 / -1;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
   background: rgba(244, 184, 63, 0.03);
-  border: 1px dashed rgba(244, 184, 63, 0.1);
+  border: 1px dashed rgba(244, 184, 63, 0.15);
   border-radius: 6px;
-  padding: 12px;
-  margin-top: 4px;
+  padding: 16px;
+  margin-top: 8px;
   animation: fadeIn 0.3s ease-out;
 }
 

@@ -1270,62 +1270,72 @@ function createPlayCard(driveCard, playData = null) {
       <button type="button" class="btn-remove-play">&times;</button>
     </div>
     <div class="play-card__grid">
-      <label>
-        Round of Match
-        <select class="play-round" required>
-          <option value="First Half">First Half</option>
-          <option value="Second Half">Second Half</option>
-        </select>
-      </label>
-      <label>
-        Down
-        <select class="play-down" required>
-          ${downOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
-        </select>
-      </label>
-      <label>
-        Category Play
-        <select class="play-category" required>
-          ${catOptions.map(c => `<option value="${c}">${c}</option>`).join('')}
-        </select>
-      </label>
-      <label>
-        Play
-        <select class="play-playbook" required>
-          <option value="">Pilih Playbook</option>
-        </select>
-      </label>
-      <label>
-        Route
-        <select class="play-route" required>
-          <option value="">Pilih Rute</option>
-          ${cache.routes.map(r => `<option value="${r.route_id}">${r.route_name} (${r.abbreviation})</option>`).join('')}
-        </select>
-      </label>
-      <label>
-        QB
-        <select class="play-qb" required>
-          <option value="">Pilih QB</option>
-          ${qbPlayers.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
-        </select>
-      </label>
-      <label>
-        Target
-        <select class="play-target" required>
-          <option value="">Pilih Target</option>
-          ${cache.players.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
-        </select>
-      </label>
-      <label>
-        Result
-        <select class="play-result" required>
-          <option value="">Pilih Result</option>
-          ${resOptions.map(r => `<option value="${r}">${r}</option>`).join('')}
-        </select>
-      </label>
+      <!-- Kolom 1: Konteks Match -->
+      <div class="play-card__col">
+        <label>
+          Round of Match
+          <select class="play-round" required>
+            <option value="First Half">First Half</option>
+            <option value="Second Half">Second Half</option>
+          </select>
+        </label>
+        <label>
+          Down
+          <select class="play-down" required>
+            ${downOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+
+      <!-- Kolom 2: Taktik & Rute -->
+      <div class="play-card__col">
+        <label>
+          Category Play
+          <select class="play-category" required>
+            ${catOptions.map(c => `<option value="${c}">${c}</option>`).join('')}
+          </select>
+        </label>
+        <label>
+          Play
+          <select class="play-playbook" required>
+            <option value="">Pilih Playbook</option>
+          </select>
+        </label>
+        <label>
+          Route
+          <select class="play-route" required>
+            <option value="">Pilih Rute</option>
+            ${cache.routes.map(r => `<option value="${r.route_id}">${r.route_name} (${r.abbreviation})</option>`).join('')}
+          </select>
+        </label>
+      </div>
+
+      <!-- Kolom 3: Personil & Hasil -->
+      <div class="play-card__col">
+        <label>
+          QB (Quarterback)
+          <select class="play-qb" required>
+            <option value="">Pilih QB</option>
+            ${qbPlayers.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
+          </select>
+        </label>
+        <label>
+          Target (Receiver)
+          <select class="play-target" required>
+            <option value="">Pilih Target</option>
+            ${cache.players.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
+          </select>
+        </label>
+        <label>
+          Result
+          <select class="play-result" required>
+            <option value="">Pilih Result</option>
+            ${resOptions.map(r => `<option value="${r}">${r}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+
       <div class="play-conditional-container" style="grid-column: 1 / -1; display: none;"></div>
-      
-      <!-- Play Diagram Strategy HUD preview placeholder -->
       <div class="play-hud-container" style="grid-column: 1 / -1; display: none;"></div>
     </div>
   `;
