@@ -95,7 +95,7 @@ body {
 .sidebar__brand-logo {
   max-width: 92%;
   height: auto;
-  max-height: 54px;
+  max-height: 60px;
   object-fit: contain;
   filter: drop-shadow(0 0 6px rgba(244, 184, 63, 0.15));
   transition: transform 0.3s ease;
