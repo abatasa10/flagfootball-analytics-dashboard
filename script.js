@@ -1133,6 +1133,17 @@ function startEditSession(id) {
   sessionOpponentScoreInput.value = s.opponent_score || 0;
   sessionOurScorePreview.textContent = s.our_score || 0;
 
+  // LED Scoreboard initialization
+  const ourScoreLed = document.getElementById('scoreboard-our-score');
+  const oppScoreLed = document.getElementById('scoreboard-opponent-score');
+  const oppLabel = document.getElementById('scoreboard-opponent-label');
+  const typeDisplay = document.getElementById('scoreboard-type-display');
+  
+  if (ourScoreLed) ourScoreLed.textContent = String(s.our_score || 0).padStart(2, '0');
+  if (oppScoreLed) oppScoreLed.textContent = String(s.opponent_score || 0).padStart(2, '0');
+  if (oppLabel) oppLabel.textContent = (s.opponent || 'LAWAN').toUpperCase();
+  if (typeDisplay) typeDisplay.textContent = (s.session_type || 'SCRIMAGE').toUpperCase();
+
   sessionDrivesContainer.innerHTML = '';
 
   // Get plays
@@ -1174,6 +1185,17 @@ function cancelEditSession() {
   sessionOurScorePreview.textContent = '0';
   sessionDrivesContainer.innerHTML = '';
   driveCounter = 0;
+
+  // Reset scoreboard
+  const ourScoreLed = document.getElementById('scoreboard-our-score');
+  const oppScoreLed = document.getElementById('scoreboard-opponent-score');
+  const oppLabel = document.getElementById('scoreboard-opponent-label');
+  const typeDisplay = document.getElementById('scoreboard-type-display');
+  
+  if (ourScoreLed) ourScoreLed.textContent = '00';
+  if (oppScoreLed) oppScoreLed.textContent = '00';
+  if (oppLabel) oppLabel.textContent = 'LAWAN';
+  if (typeDisplay) typeDisplay.textContent = 'SCRIMAGE';
 
   sessionListView.style.display = 'block';
   sessionFormView.style.display = 'none';
@@ -1271,7 +1293,6 @@ function createPlayCard(driveCard, playData = null) {
         Play
         <select class="play-playbook" required>
           <option value="">Pilih Playbook</option>
-          ${cache.playbooks.map(p => `<option value="${p.play_id}">${p.play_name}</option>`).join('')}
         </select>
       </label>
       <label>
@@ -1303,11 +1324,25 @@ function createPlayCard(driveCard, playData = null) {
         </select>
       </label>
       <div class="play-conditional-container" style="grid-column: 1 / -1; display: none;"></div>
+      
+      <!-- Play Diagram Strategy HUD preview placeholder -->
+      <div class="play-hud-container" style="grid-column: 1 / -1; display: none;"></div>
     </div>
   `;
 
+  const categorySelect = playCard.querySelector('.play-category');
+  const playSelect = playCard.querySelector('.play-playbook');
   const resultSelect = playCard.querySelector('.play-result');
   const condContainer = playCard.querySelector('.play-conditional-container');
+
+  // Reactive listeners
+  categorySelect.addEventListener('change', () => {
+    updatePlaySelectOptions(playCard);
+  });
+
+  playSelect.addEventListener('change', () => {
+    updatePlayDiagramHUD(playCard);
+  });
 
   resultSelect.addEventListener('change', () => {
     renderConditionalFields(resultSelect.value, condContainer);
@@ -1319,17 +1354,21 @@ function createPlayCard(driveCard, playData = null) {
     recalculateOurScore();
   });
 
+  // Populate options initially
+  updatePlaySelectOptions(playCard, playData ? playData.play_id : null);
+
   if (playData) {
     playCard.querySelector('.play-round').value = playData.round_of_match || 'First Half';
     playCard.querySelector('.play-down').value = playData.down || 'First To Mid';
     playCard.querySelector('.play-category').value = playData.category_play || 'Short';
-    playCard.querySelector('.play-playbook').value = playData.play_id || '';
     playCard.querySelector('.play-route').value = playData.route_id || '';
     playCard.querySelector('.play-qb').value = playData.qb_player_id || '';
     playCard.querySelector('.play-target').value = playData.target_player_id || '';
     playCard.querySelector('.play-result').value = playData.result || '';
 
+    // Render conditional & HUD
     renderConditionalFields(playData.result, condContainer, playData);
+    updatePlayDiagramHUD(playCard);
   }
 
   container.appendChild(playCard);
@@ -1413,6 +1452,12 @@ function recalculateOurScore() {
     }
   });
   sessionOurScorePreview.textContent = score;
+
+  // LED Scoreboard update
+  const ourScoreLed = document.getElementById('scoreboard-our-score');
+  if (ourScoreLed) {
+    ourScoreLed.textContent = String(score).padStart(2, '0');
+  }
 }
 
 async function saveSession(status) {
@@ -1537,6 +1582,18 @@ if (newSessionBtn) newSessionBtn.addEventListener('click', () => {
   sessionFormView.style.display = 'block';
   sessionDrivesContainer.innerHTML = '';
   driveCounter = 0;
+
+  // Reset scoreboard
+  const ourScoreLed = document.getElementById('scoreboard-our-score');
+  const oppScoreLed = document.getElementById('scoreboard-opponent-score');
+  const oppLabel = document.getElementById('scoreboard-opponent-label');
+  const typeDisplay = document.getElementById('scoreboard-type-display');
+  
+  if (ourScoreLed) ourScoreLed.textContent = '00';
+  if (oppScoreLed) oppScoreLed.textContent = '00';
+  if (oppLabel) oppLabel.textContent = 'LAWAN';
+  if (typeDisplay) typeDisplay.textContent = 'SCRIMAGE';
+
   createDrivePanel(); // Create a default first drive
 });
 
@@ -1544,7 +1601,96 @@ if (cancelSessionBtn) cancelSessionBtn.addEventListener('click', cancelEditSessi
 if (saveSessionBtn) saveSessionBtn.addEventListener('click', () => saveSession('On Progress'));
 if (doneSessionBtn) doneSessionBtn.addEventListener('click', () => saveSession('Done'));
 if (addDriveBtn) addDriveBtn.addEventListener('click', () => createDrivePanel());
-if (sessionOpponentScoreInput) sessionOpponentScoreInput.addEventListener('input', recalculateOurScore);
+
+// Scoreboard HUD dynamic listeners
+if (sessionOpponentInput) {
+  sessionOpponentInput.addEventListener('input', (e) => {
+    const oppLabel = document.getElementById('scoreboard-opponent-label');
+    if (oppLabel) {
+      oppLabel.textContent = (e.target.value.trim() || 'LAWAN').toUpperCase();
+    }
+  });
+}
+
+if (sessionOpponentScoreInput) {
+  sessionOpponentScoreInput.addEventListener('input', (e) => {
+    const oppScoreLed = document.getElementById('scoreboard-opponent-score');
+    if (oppScoreLed) {
+      const val = parseInt(e.target.value, 10) || 0;
+      oppScoreLed.textContent = String(val).padStart(2, '0');
+    }
+  });
+}
+
+if (sessionTypeInput) {
+  sessionTypeInput.addEventListener('change', (e) => {
+    const typeDisplay = document.getElementById('scoreboard-type-display');
+    if (typeDisplay) {
+      typeDisplay.textContent = e.target.value.toUpperCase();
+    }
+  });
+}
+
+// Reactive select option helper
+function updatePlaySelectOptions(playCard, selectedPlayId = null) {
+  const category = playCard.querySelector('.play-category').value;
+  const playSelect = playCard.querySelector('.play-playbook');
+  
+  const filtered = cache.playbooks.filter(p => {
+    if (!category) return true;
+    return String(p.play_category || '').toLowerCase() === category.toLowerCase();
+  });
+  
+  playSelect.innerHTML = '<option value="">Pilih Playbook</option>';
+  filtered.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p.play_id;
+    opt.textContent = p.play_name;
+    playSelect.appendChild(opt);
+  });
+  
+  if (selectedPlayId) {
+    playSelect.value = selectedPlayId;
+  } else {
+    playSelect.value = '';
+  }
+  
+  updatePlayDiagramHUD(playCard);
+}
+
+// Play diagram live strategy HUD helper
+function updatePlayDiagramHUD(playCard) {
+  const playId = playCard.querySelector('.play-playbook').value;
+  const hudContainer = playCard.querySelector('.play-hud-container');
+  hudContainer.innerHTML = '';
+  
+  if (!playId) {
+    hudContainer.style.display = 'none';
+    return;
+  }
+  
+  const play = cache.playbooks.find(p => p.play_id === playId);
+  if (play && play.image) {
+    hudContainer.style.display = 'block';
+    
+    const hudCard = document.createElement('div');
+    hudCard.className = 'play-card__hud';
+    
+    hudCard.innerHTML = `
+      <div class="play-card__hud-preview-wrapper" onclick="window.open('${play.image}', '_blank')">
+        <img class="play-card__hud-img" src="${play.image}" alt="Diagram Playbook">
+      </div>
+      <div class="play-card__hud-details">
+        <h5 class="play-card__hud-title">${play.play_name || 'Diagram Strategi'}</h5>
+        <p class="play-card__hud-desc">${play.description || 'Tidak ada deskripsi taktik.'}</p>
+        <span style="font-size: 0.65rem; color: var(--accent); cursor: pointer; text-decoration: underline;" onclick="window.open('${play.image}', '_blank')">Lihat Ukuran Penuh</span>
+      </div>
+    `;
+    hudContainer.appendChild(hudCard);
+  } else {
+    hudContainer.style.display = 'none';
+  }
+}
 
 // Expose to window scope for onclick actions
 window.startEditSession = startEditSession;

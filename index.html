@@ -397,14 +397,38 @@
               </div>
             </div>
 
+            <!-- Stadium LED Scoreboard -->
+            <div class="stadium-scoreboard" style="margin-bottom: 24px;">
+              <div class="scoreboard-inner">
+                <!-- Our Team -->
+                <div class="scoreboard-team our-team">
+                  <div class="scoreboard-team-label">PLAYMETRICS FF</div>
+                  <div class="scoreboard-digit" id="scoreboard-our-score">00</div>
+                </div>
+                
+                <!-- Divider HUD Info -->
+                <div class="scoreboard-info">
+                  <div class="scoreboard-period" id="scoreboard-period-display">1ST HALF</div>
+                  <div class="scoreboard-colon">:</div>
+                  <div class="scoreboard-session-type" id="scoreboard-type-display">SCRIMAGE</div>
+                </div>
+                
+                <!-- Opponent Team -->
+                <div class="scoreboard-team opponent-team">
+                  <div class="scoreboard-team-label" id="scoreboard-opponent-label">LAWAN</div>
+                  <div class="scoreboard-digit" id="scoreboard-opponent-score">00</div>
+                </div>
+              </div>
+            </div>
+
             <!-- Session Metadata Header Card -->
-            <div class="glass-card" style="margin-bottom: 20px;">
+            <div class="glass-card" style="margin-bottom: 24px;">
               <div class="glass-card__body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
                 <label>
                   Tipe Sesi
                   <select id="session-type-input" style="width: 100%;" required>
                     <option value="Scrimage Internal">Scrimage Internal</option>
-                    <option value="Scrimage">Scrimage</option>
+                    <option value="Scrimage" selected>Scrimage</option>
                     <option value="Tournament">Tournament</option>
                   </select>
                 </label>
@@ -420,10 +444,7 @@
                   Skor Lawan
                   <input type="number" id="session-opponent-score-input" value="0" min="0" style="width: 100%;" required>
                 </label>
-                <div style="display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); border-radius: 6px; padding: 10px; text-align: center;">
-                  <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Skor Kita (Auto)</span>
-                  <span id="session-our-score-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">0</span>
-                </div>
+                <span id="session-our-score-preview" style="display: none;">0</span>
               </div>
             </div>
 

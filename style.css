@@ -1344,3 +1344,176 @@ body {
   color: white;
   border-color: var(--danger);
 }
+
+/* ---------- 5b. Stadium LED Scoreboard Styles ---------- */
+.stadium-scoreboard {
+  background: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+  border: 3px solid #374151;
+  border-radius: 12px;
+  padding: 16px 24px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), inset 0 2px 5px rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.stadium-scoreboard::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none;
+}
+
+.scoreboard-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.scoreboard-team {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scoreboard-team.our-team .scoreboard-digit {
+  color: #3b82f6; /* Electric Blue for playmetrics */
+  text-shadow: 0 0 12px rgba(59, 130, 246, 0.6), 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+.scoreboard-team.opponent-team .scoreboard-digit {
+  color: #ef4444; /* Neon Red for opponent */
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.6), 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.scoreboard-team-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  text-align: center;
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scoreboard-digit {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 2.75rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.scoreboard-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+  border-left: 2px dashed rgba(255, 255, 255, 0.05);
+  border-right: 2px dashed rgba(255, 255, 255, 0.05);
+}
+
+.scoreboard-period {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 2px;
+}
+
+.scoreboard-colon {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #10b981; /* Glowing Green Colon */
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.scoreboard-session-type {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ---------- Yardlines Pitch Drive Background ---------- */
+.drive-card {
+  background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border-left: 4px solid var(--accent) !important;
+}
+
+/* ---------- Play Diagram HUD Styles ---------- */
+.play-card__hud {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 12px;
+  margin-top: 12px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.play-card__hud-preview-wrapper {
+  width: 90px;
+  height: 90px;
+  min-width: 90px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(244, 184, 63, 0.15);
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.play-card__hud-preview-wrapper:hover {
+  transform: scale(1.05);
+  border-color: var(--accent);
+}
+
+.play-card__hud-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.play-card__hud-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.play-card__hud-title {
+  font-family: 'Oswald', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0;
+}
+
+.play-card__hud-desc {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin: 0;
+}
