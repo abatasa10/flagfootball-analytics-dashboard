@@ -171,7 +171,7 @@ function doPost(e) {
 
           assignments.forEach(function (asg) {
             asg['play_id'] = idValue;
-            asg['assignment_id'] = generateNextId(assignSheet, 'assignment_id', 'AS');
+            asg['assignment_id'] = generateNextId(assignSheet, 'assignment_id', 'PA');
 
             var newAsgRow = headersAssign.map(function (h) {
               return asg[h] !== undefined ? asg[h] : '';

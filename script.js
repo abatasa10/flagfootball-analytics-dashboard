@@ -119,7 +119,7 @@ const viewTitlesMap = {
 navButtons.forEach(btn => {
   btn.addEventListener('click', () => {
     const targetView = btn.getAttribute('data-view');
-    
+
     // Update active nav button
     navButtons.forEach(b => b.classList.remove('is-active'));
     btn.classList.add('is-active');
@@ -152,11 +152,11 @@ async function fetchSheetData(sheetName) {
 async function loadAllData() {
   globalRefreshBtn.disabled = true;
   globalRefreshBtn.innerHTML = `
-    <svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-    </svg>
-    Memuat…
-  `;
+      <svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      Memuat…
+    `;
 
   // Start spinning using CSS class
   const svgIcon = globalRefreshBtn.querySelector('svg');
@@ -175,11 +175,11 @@ async function loadAllData() {
   } finally {
     globalRefreshBtn.disabled = false;
     globalRefreshBtn.innerHTML = `
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
-        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-      </svg>
-      Muat Ulang Data
-    `;
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        Muat Ulang Data
+      `;
   }
 }
 
@@ -189,7 +189,7 @@ async function loadTeams() {
   try {
     const data = await fetchSheetData(SHEET_TEAMS);
     cache.teams = Array.isArray(data) ? data : [];
-    
+
     // Update Dashboard Stat
     statTeams.textContent = cache.teams.length;
 
@@ -207,23 +207,23 @@ async function loadTeams() {
       const abbr = team.abbreviation || 'T';
       const desc = team.description || 'Tidak ada deskripsi.';
       const id = team.team_id || '';
-      
+
       return `
-        <div class="team-badge-card">
-          <div class="team-badge-card__color-bar" style="background: ${color};"></div>
-          <div class="team-badge-card__logo" style="background: ${color};">
-            ${abbr.substring(0, 3)}
+          <div class="team-badge-card">
+            <div class="team-badge-card__color-bar" style="background: ${color};"></div>
+            <div class="team-badge-card__logo" style="background: ${color};">
+              ${abbr.substring(0, 3)}
+            </div>
+            <div class="team-badge-card__name">${name}</div>
+            <div class="team-badge-card__abbr">${abbr}</div>
+            <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">${desc}</div>
+            
+            <div class="team-card-actions">
+              <button class="action-btn edit" onclick="startEditTeam('${id}')">Edit</button>
+              <button class="action-btn delete" onclick="deleteRecord('${SHEET_TEAMS}', '${id}')">Hapus</button>
+            </div>
           </div>
-          <div class="team-badge-card__name">${name}</div>
-          <div class="team-badge-card__abbr">${abbr}</div>
-          <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 8px;">${desc}</div>
-          
-          <div class="team-card-actions">
-            <button class="action-btn edit" onclick="startEditTeam('${id}')">Edit</button>
-            <button class="action-btn delete" onclick="deleteRecord('${SHEET_TEAMS}', '${id}')">Hapus</button>
-          </div>
-        </div>
-      `;
+        `;
     }).join('');
 
   } catch (err) {
@@ -238,7 +238,7 @@ async function loadPositions() {
   try {
     const data = await fetchSheetData(SHEET_POSITIONS);
     cache.positions = Array.isArray(data) ? data : [];
-    
+
     // Update Dashboard Stat
     statPositions.textContent = cache.positions.length;
 
@@ -253,18 +253,18 @@ async function loadPositions() {
     positionTableBody.innerHTML = cache.positions.map((pos, i) => {
       const id = pos.position_id || '';
       return `
-        <tr>
-          <td>${i + 1}</td>
-          <td><strong>${id || '-'}</strong></td>
-          <td>${pos.position_name || '-'}</td>
-          <td><span class="badge badge-accent">${pos.abbreviation || '-'}</span></td>
-          <td>${pos.category || '-'}</td>
-          <td>
-            <button class="action-btn edit" onclick="startEditPosition('${id}')">Edit</button>
-            <button class="action-btn delete" onclick="deleteRecord('${SHEET_POSITIONS}', '${id}')">Hapus</button>
-          </td>
-        </tr>
-      `;
+          <tr>
+            <td>${i + 1}</td>
+            <td><strong>${id || '-'}</strong></td>
+            <td>${pos.position_name || '-'}</td>
+            <td><span class="badge badge-accent">${pos.abbreviation || '-'}</span></td>
+            <td>${pos.category || '-'}</td>
+            <td>
+              <button class="action-btn edit" onclick="startEditPosition('${id}')">Edit</button>
+              <button class="action-btn delete" onclick="deleteRecord('${SHEET_POSITIONS}', '${id}')">Hapus</button>
+            </td>
+          </tr>
+        `;
     }).join('');
 
   } catch (err) {
@@ -279,7 +279,7 @@ async function loadRoutes() {
   try {
     const data = await fetchSheetData(SHEET_ROUTES);
     cache.routes = Array.isArray(data) ? data : [];
-    
+
     // Update Dashboard Stat
     statRoutes.textContent = cache.routes.length;
 
@@ -291,21 +291,21 @@ async function loadRoutes() {
     routeTableBody.innerHTML = cache.routes.map((rt, i) => {
       const id = rt.route_id || '';
       return `
-        <tr>
-          <td>${i + 1}</td>
-          <td><strong>${id || '-'}</strong></td>
-          <td>${rt.route_name || '-'}</td>
-          <td><span class="badge badge-accent">${rt.abbreviation || '-'}</span></td>
-          <td>${rt.category || '-'}</td>
-          <td>${rt.route_type || '-'}</td>
-          <td>${rt.description || '-'}</td>
-          <td>${rt.status || '-'}</td>
-          <td>
-            <button class="action-btn edit" onclick="startEditRoute('${id}')">Edit</button>
-            <button class="action-btn delete" onclick="deleteRecord('${SHEET_ROUTES}', '${id}')">Hapus</button>
-          </td>
-        </tr>
-      `;
+          <tr>
+            <td>${i + 1}</td>
+            <td><strong>${id || '-'}</strong></td>
+            <td>${rt.route_name || '-'}</td>
+            <td><span class="badge badge-accent">${rt.abbreviation || '-'}</span></td>
+            <td>${rt.category || '-'}</td>
+            <td>${rt.route_type || '-'}</td>
+            <td>${rt.description || '-'}</td>
+            <td>${rt.status || '-'}</td>
+            <td>
+              <button class="action-btn edit" onclick="startEditRoute('${id}')">Edit</button>
+              <button class="action-btn delete" onclick="deleteRecord('${SHEET_ROUTES}', '${id}')">Hapus</button>
+            </td>
+          </tr>
+        `;
     }).join('');
 
   } catch (err) {
@@ -346,50 +346,50 @@ async function loadPlaybook() {
 
       // Get assignments for this play
       const playAsgs = cache.playAssignments.filter(asg => String(asg.play_id).trim() === String(id).trim());
-      
-      const assignmentsHtml = playAsgs.map(asg => `
-        <li class="playbook-card__assignments-item">
-          <span><strong>${asg.receiver || '-'}</strong> (${asg.position || '-'})</span>
-          <span class="playbook-card__assignments-val">${asg.route_id || '-'}</span>
-        </li>
-      `).join('');
 
-      const diagramHtml = imgUrl 
+      const assignmentsHtml = playAsgs.map(asg => `
+          <li class="playbook-card__assignments-item">
+            <span><strong>${asg.receiver || '-'}</strong> (${asg.position || '-'})</span>
+            <span class="playbook-card__assignments-val">${asg.route_id || '-'}</span>
+          </li>
+        `).join('');
+
+      const diagramHtml = imgUrl
         ? `<img src="${imgUrl}" alt="${name}">`
         : `<div class="playbook-card__diagram-placeholder">[ Diagram Taktik ]</div>`;
 
       return `
-        <div class="playbook-card">
-          <div class="playbook-card__header">
-            <span class="playbook-card__title">${name}</span>
-            <span class="badge ${active === 'Aktif' ? 'badge-accent' : 'badge-muted'}">${active}</span>
-          </div>
-          
-          <div class="playbook-card__body">
-            <div class="playbook-card__diagram">
-              ${diagramHtml}
+          <div class="playbook-card">
+            <div class="playbook-card__header">
+              <span class="playbook-card__title">${name}</span>
+              <span class="badge ${active === 'Aktif' ? 'badge-accent' : 'badge-muted'}">${active}</span>
             </div>
             
-            <div class="playbook-card__meta">
-              <div class="playbook-card__meta-item">Formasi: <strong>${form}</strong></div>
-              <div class="playbook-card__meta-item">Tipe: <strong>${type}</strong></div>
-              <div class="playbook-card__meta-item" style="grid-column: 1 / -1;">Kategori: <strong>${cat}</strong></div>
+            <div class="playbook-card__body">
+              <div class="playbook-card__diagram">
+                ${diagramHtml}
+              </div>
+              
+              <div class="playbook-card__meta">
+                <div class="playbook-card__meta-item">Formasi: <strong>${form}</strong></div>
+                <div class="playbook-card__meta-item">Tipe: <strong>${type}</strong></div>
+                <div class="playbook-card__meta-item" style="grid-column: 1 / -1;">Kategori: <strong>${cat}</strong></div>
+              </div>
+              
+              <div class="playbook-card__desc">${desc}</div>
+              
+              <div class="playbook-card__assignments-title">Penugasan Rute</div>
+              <ul class="playbook-card__assignments-list">
+                ${assignmentsHtml.length ? assignmentsHtml : '<li class="loading-state" style="padding: 4px 0;">Tidak ada penugasan.</li>'}
+              </ul>
             </div>
             
-            <div class="playbook-card__desc">${desc}</div>
-            
-            <div class="playbook-card__assignments-title">Penugasan Rute</div>
-            <ul class="playbook-card__assignments-list">
-              ${assignmentsHtml.length ? assignmentsHtml : '<li class="loading-state" style="padding: 4px 0;">Tidak ada penugasan.</li>'}
-            </ul>
+            <div class="playbook-card__footer">
+              <button class="action-btn edit" onclick="startEditPlaybook('${id}')">Edit</button>
+              <button class="action-btn delete" onclick="deleteRecord('${SHEET_PLAYBOOK}', '${id}')">Hapus</button>
+            </div>
           </div>
-          
-          <div class="playbook-card__footer">
-            <button class="action-btn edit" onclick="startEditPlaybook('${id}')">Edit</button>
-            <button class="action-btn delete" onclick="deleteRecord('${SHEET_PLAYBOOK}', '${id}')">Hapus</button>
-          </div>
-        </div>
-      `;
+        `;
     }).join('');
 
   } catch (err) {
@@ -419,21 +419,21 @@ async function loadPlayers() {
       const weight = p['weight (kg)'] || '-';
       const secPos = p.secondary_position ? `/ ${p.secondary_position}` : '';
       return `
-        <tr>
-          <td>${i + 1}</td>
-          <td><strong>${id || '-'}</strong></td>
-          <td>${p.name || '-'}</td>
-          <td>${p.nick_name || '-'}</td>
-          <td>${p.jersey_number || '-'}</td>
-          <td>${p.position || '-'} ${secPos}</td>
-          <td><span class="badge badge-accent">${p.team || '-'}</span></td>
-          <td>${height} cm / ${weight} kg</td>
-          <td>
-            <button class="action-btn edit" onclick="startEditPlayer('${id}')">Edit</button>
-            <button class="action-btn delete" onclick="deleteRecord('${SHEET_PLAYERS}', '${id}')">Hapus</button>
-          </td>
-        </tr>
-      `;
+          <tr>
+            <td>${i + 1}</td>
+            <td><strong>${id || '-'}</strong></td>
+            <td>${p.name || '-'}</td>
+            <td>${p.nick_name || '-'}</td>
+            <td>${p.jersey_number || '-'}</td>
+            <td>${p.position || '-'} ${secPos}</td>
+            <td><span class="badge badge-accent">${p.team || '-'}</span></td>
+            <td>${height} cm / ${weight} kg</td>
+            <td>
+              <button class="action-btn edit" onclick="startEditPlayer('${id}')">Edit</button>
+              <button class="action-btn delete" onclick="deleteRecord('${SHEET_PLAYERS}', '${id}')">Hapus</button>
+            </td>
+          </tr>
+        `;
     }).join('');
 
   } catch (err) {
@@ -474,7 +474,7 @@ function populatePositionSelects() {
       const opt = document.createElement('option');
       opt.value = pos.abbreviation;
       opt.textContent = `${pos.position_name} (${pos.abbreviation})`;
-      
+
       const opt2 = opt.cloneNode(true);
 
       playerPositionSelect.appendChild(opt);
@@ -511,7 +511,7 @@ async function deleteRecord(sheetName, idValue) {
     if (result.error) throw new Error(result.error);
 
     alert('Data berhasil dihapus.');
-    
+
     // Refresh lists
     if (sheetName === SHEET_TEAMS) {
       if (editingTeamId === idValue) cancelEditTeam();
@@ -645,14 +645,14 @@ function startEditPlaybook(id) {
   playbookSubmitBtn.textContent = 'Update Playbook';
   playbookCancelBtn.style.display = 'inline-block';
   document.querySelector('#view-playbook .glass-card__title').textContent = `Edit Playbook (${id})`;
-  
+
   updateAssignmentsCount();
 }
 
 function cancelEditPlaybook() {
   editingPlaybookId = null;
   playbookForm.reset();
-  
+
   // Reset upload states
   playbookImageFile.value = '';
   uploadedImageBase64 = null;
@@ -707,36 +707,36 @@ function createAssignmentRow(receiver = '', positionVal = '', routeVal = '') {
 
   const receivers = ['X', 'Y', 'Z', 'C', 'QB'];
   const receiverOptions = receivers.map(rec => `
-    <option value="${rec}" ${rec === receiver ? 'selected' : ''}>${rec}</option>
-  `).join('');
+      <option value="${rec}" ${rec === receiver ? 'selected' : ''}>${rec}</option>
+    `).join('');
 
   const posOptions = cache.positions.map(p => `
-    <option value="${p.abbreviation}" ${p.abbreviation === positionVal ? 'selected' : ''}>
-      ${p.abbreviation}
-    </option>
-  `).join('');
+      <option value="${p.abbreviation}" ${p.abbreviation === positionVal ? 'selected' : ''}>
+        ${p.abbreviation}
+      </option>
+    `).join('');
 
   const routeOptions = cache.routes.map(r => `
-    <option value="${r.abbreviation}" ${r.abbreviation === routeVal ? 'selected' : ''}>
-      ${r.route_name} (${r.abbreviation})
-    </option>
-  `).join('');
+      <option value="${r.abbreviation}" ${r.abbreviation === routeVal ? 'selected' : ''}>
+        ${r.route_name} (${r.abbreviation})
+      </option>
+    `).join('');
 
   row.innerHTML = `
-    <select name="asg_receiver[]" required style="width: 100px;">
-      <option value="">Receiver</option>
-      ${receiverOptions}
-    </select>
-    <select name="asg_position[]" required style="width: 100px;">
-      <option value="">Posisi</option>
-      ${posOptions}
-    </select>
-    <select name="asg_route[]" required style="flex: 1.2;">
-      <option value="">Rute</option>
-      ${routeOptions}
-    </select>
-    <button type="button" class="action-btn delete btn-remove-row" style="flex-shrink: 0;">X</button>
-  `;
+      <select name="asg_receiver[]" required style="width: 100px;">
+        <option value="">Receiver</option>
+        ${receiverOptions}
+      </select>
+      <select name="asg_position[]" required style="width: 100px;">
+        <option value="">Posisi</option>
+        ${posOptions}
+      </select>
+      <select name="asg_route[]" required style="flex: 1.2;">
+        <option value="">Rute</option>
+        ${routeOptions}
+      </select>
+      <button type="button" class="action-btn delete btn-remove-row" style="flex-shrink: 0;">X</button>
+    `;
 
   row.querySelector('.btn-remove-row').addEventListener('click', () => {
     row.remove();
@@ -787,11 +787,11 @@ playbookImageFile.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) {
     const reader = new FileReader();
-    reader.onload = function(evt) {
+    reader.onload = function (evt) {
       uploadedImageBase64 = evt.target.result.split(',')[1];
       uploadedImageName = file.name;
       uploadedImageType = file.type;
-      
+
       playbookImagePreview.src = evt.target.result;
       playbookImagePreviewContainer.style.display = 'block';
     };
@@ -841,7 +841,7 @@ async function submitFormData(sheetName, data, statusEl, submitBtn, action = 'cr
 
     statusEl.textContent = 'Tersimpan ✓';
     statusEl.className = 'form-status ok';
-    
+
     // Clear status notification after 3 seconds
     setTimeout(() => {
       statusEl.textContent = '';
@@ -930,7 +930,7 @@ routeCancelBtn.addEventListener('click', cancelEditRoute);
 // Playbook Form Submit (Master-Detail Cascade payload + File Upload)
 playbookForm.addEventListener('submit', async (e) => {
   e.preventDefault();
-  
+
   // Compile playbook header fields
   const formData = new FormData(playbookForm);
   const playData = {
@@ -967,7 +967,7 @@ playbookForm.addEventListener('submit', async (e) => {
       data: playData,
       assignments: assignments
     };
-    
+
     if (id) {
       payload.id = id;
     }
@@ -992,7 +992,7 @@ playbookForm.addEventListener('submit', async (e) => {
 
     playbookStatus.textContent = 'Tersimpan ✓';
     playbookStatus.className = 'form-status ok';
-    
+
     setTimeout(() => { playbookStatus.textContent = ''; }, 3000);
 
     cancelEditPlaybook();
@@ -1036,12 +1036,12 @@ document.addEventListener('DOMContentLoaded', loadAllData);
 // CSS animation style for spinning reload icon injected dynamically
 const style = document.createElement('style');
 style.textContent = `
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  .spin-icon {
-    animation: spin 1s linear infinite;
-  }
-`;
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-icon {
+      animation: spin 1s linear infinite;
+    }
+  `;
 document.head.appendChild(style);
