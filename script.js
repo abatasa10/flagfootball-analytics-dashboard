@@ -2412,6 +2412,188 @@ function initPlayerAnalysis() {
       renderPlayerAnalysis(e.target.value);
     });
   }
+
+  // AI Analyst Trigger
+  const aiBtn = document.getElementById('btn-generate-ai-analysis');
+  if (aiBtn && !aiBtn.dataset.listener) {
+    aiBtn.dataset.listener = 'true';
+    aiBtn.addEventListener('click', async () => {
+      const selectedId = selectEl.value;
+      if (!selectedId) return;
+      
+      const player = cache.players.find(p => p.player_id === selectedId);
+      if (!player) return;
+      
+      const outputContainer = document.getElementById('ai-analysis-output-container');
+      if (!outputContainer) return;
+      
+      const originalText = aiBtn.innerHTML;
+      aiBtn.disabled = true;
+      aiBtn.innerHTML = `
+        <svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="animation: spin 1s linear infinite;">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+        </svg>
+        Menganalisis...
+      `;
+      
+      outputContainer.innerHTML = `
+        <div style="text-align: center; color: var(--accent); font-size: 0.78rem; padding: 20px 0; display: flex; align-items: center; justify-content: center; gap: 8px;">
+          <svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="16" height="16" style="animation: spin 1s linear infinite;">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+          </svg>
+          Menganalisis performa taktis pemain dengan Google Gemini AI...
+        </div>
+      `;
+      
+      try {
+        // Collect stats context
+        const isQB = String(player.position || '').toLowerCase().includes('qb') || 
+                     String(player.secondary_position || '').toLowerCase().includes('qb');
+                     
+        let statsPrompt = '';
+        if (isQB) {
+          const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(selectedId).trim());
+          const passAtt = qbPlays.filter(p => {
+            const res = String(p.result || '').toLowerCase();
+            return res === 'complete' || res === 'incomplete' || res === 'interception';
+          }).length;
+          const completions = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+          const compPct = passAtt > 0 ? Math.round((completions / passAtt) * 100) : 0;
+          let yards = 0;
+          qbPlays.forEach(p => {
+            if (String(p.result || '').toLowerCase() === 'complete') {
+              yards += parseInt(p.yards, 10) || 0;
+            }
+          });
+          const tds = qbPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+          const ints = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'interception').length;
+          
+          statsPrompt = `
+          Peran: Quarterback (QB)
+          Pass Attempts (Total Operan): ${passAtt}
+          Completions (Operan Sukses): ${completions}
+          Completion Rate: ${compPct}%
+          Passing Yards: ${yards} yards
+          Touchdowns Thrown: ${tds}
+          Interceptions Thrown: ${ints}
+          `;
+        } else {
+          const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(selectedId).trim());
+          const targets = rcPlays.length;
+          const catches = rcPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+          const catchPct = targets > 0 ? Math.round((catches / targets) * 100) : 0;
+          let yards = 0;
+          rcPlays.forEach(p => {
+            if (String(p.result || '').toLowerCase() === 'complete') {
+              yards += parseInt(p.yards, 10) || 0;
+            }
+          });
+          const yac = Math.round(yards * 0.6);
+          const tds = rcPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+          
+          statsPrompt = `
+          Peran: Receiver (WR/RB/TE)
+          Targets (Dilempar): ${targets}
+          Catches (Diterima): ${catches}
+          Catch %: ${catchPct}%
+          Receiving Yards: ${yards} yards
+          Yards After Catch (YAC): ${yac} yards
+          Touchdowns Caught: ${tds}
+          `;
+        }
+        
+        // Serialized recent plays (up to 8)
+        const recentPlays = cache.sessionPlays
+          .filter(p => String(p.target_player_id).trim() === String(selectedId).trim() || String(p.qb_player_id).trim() === String(selectedId).trim())
+          .slice(-8);
+          
+        let playsDetails = 'Riwayat Play Terakhir:\n';
+        if (recentPlays.length === 0) {
+          playsDetails += '- Belum ada data play pertandingan.\n';
+        } else {
+          recentPlays.forEach((p, idx) => {
+            const playbook = cache.playbooks.find(pl => pl.play_id === p.play_id);
+            const playName = playbook ? playbook.play_name : 'Taktik';
+            const route = cache.routes.find(r => r.route_id === p.route_id);
+            const routeName = route ? route.route_name : '';
+            playsDetails += `- Play ${idx+1}: Down: ${p.down}, Taktik: ${playName}, Rute: ${routeName}, Hasil: ${p.result}, Gained: ${p.yards} yds, TD: ${p.touchdown}\n`;
+          });
+        }
+        
+        const fullPrompt = `
+        Anda adalah AI Scout Analyst & Pelatih Kepala Flag Football professional. 
+        Berikan laporan evaluasi taktis mendalam untuk pemain berikut:
+        Nama: ${player.name}
+        Posisi Utama: ${player.position}
+        Posisi Kedua: ${player.secondary_position || 'Tidak ada'}
+        Tinggi: ${player['height (cm)'] || '-'} cm
+        Berat: ${player['weight (kg)'] || '-'} kg
+        
+        Statistik Performa Ofensif Aktif:
+        ${statsPrompt}
+        
+        ${playsDetails}
+        
+        Tolong buat Laporan Scout Report terperinci dalam Bahasa Indonesia.
+        Gunakan format Markdown dengan header:
+        ### 📊 RINGKASAN EVALUASI TAKTIS
+        *(Tulis ringkasan performa menyeluruh berdasarkan statistik)*
+        
+        ### ⚡ ANALISIS DETIL KEKUATAN
+        *(Analisis kelebihan konkret dengan menghubungkan statistik dan riwayat play)*
+        
+        ### ⚠️ AREA YANG MEMBUTUHKAN PENINGKATAN (KELEMAHAN)
+        *(Identifikasi kelemahan berdasarkan data)*
+        
+        ### 🛠️ REKOMENDASI MENU LATIHAN FISIK & TAKTIS
+        *(Sebutkan 3-4 latihan spesifik untuk menutupi kelemahannya)*
+        
+        Jaga nada bicara profesional, taktis, dan memotivasi.
+        `;
+        
+        // POST to backend api bridge
+        const response = await fetch(API_URL, {
+          method: 'POST',
+          body: JSON.stringify({
+            action: 'analyze_player',
+            prompt: fullPrompt
+          })
+        });
+        
+        const result = await response.json();
+        if (result.error) {
+          throw new Error(result.error);
+        }
+        
+        outputContainer.innerHTML = `
+          <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; border-left: 3px solid var(--accent); padding-left: 14px; background: rgba(255,255,255,0.01); border-radius: 4px; padding: 12px 16px;">
+            ${parseMarkdownToHTML(result.analysis)}
+          </div>
+        `;
+      } catch (err) {
+        outputContainer.innerHTML = `
+          <div style="font-size: 0.75rem; color: var(--danger); text-align: center; padding: 20px 0;">
+            Gagal melakukan analisis AI: ${err.message}
+            <br>
+            <span style="font-size: 0.68rem; color: var(--text-muted);">Pastikan Anda sudah menambahkan GEMINI_API_KEY di Project Settings > Script Properties pada Apps Script.</span>
+          </div>
+        `;
+      } finally {
+        aiBtn.disabled = false;
+        aiBtn.innerHTML = originalText;
+      }
+    });
+  }
+}
+
+function parseMarkdownToHTML(text) {
+  if (!text) return '';
+  return text
+    .replace(/^### (.*$)/gim, '<h5 style="color: var(--accent); font-family:\'Oswald\', sans-serif; font-size: 0.95rem; margin-top: 16px; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.03); padding-bottom: 4px;">$1</h5>')
+    .replace(/^## (.*$)/gim, '<h4 style="color: var(--accent); font-family:\'Oswald\', sans-serif; font-size: 1.1rem; margin-top: 20px; margin-bottom: 8px;">$1</h4>')
+    .replace(/^\* (.*$)/gim, '<li style="font-size: 0.78rem; color: var(--text-secondary); margin-left: 14px; list-style-type: square; margin-bottom: 4px;">$1</li>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong style="color: var(--text-primary); font-weight: 700;">$1</strong>')
+    .replace(/\n/g, '<br>');
 }
 
 function renderPlayerAnalysis(playerId) {

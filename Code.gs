@@ -58,6 +58,46 @@ function doPost(e) {
     var action = (body.action || 'create').trim().toLowerCase();
     var data = body.data || {};
 
+    // AI ANALYST ROUTE
+    if (action === 'analyze_player') {
+      var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'GEMINI_API_KEY tidak ditemukan di Properties Script Apps Script Anda. Harap tambahkan API Key Anda di bagian Project Settings > Script Properties di editor Apps Script.' });
+      }
+      
+      var prompt = body.prompt;
+      if (!prompt) {
+        return jsonResponse({ error: 'Prompt analisis kosong.' });
+      }
+      
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+      var payload = {
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }]
+      };
+      
+      var options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+      
+      var response = UrlFetchApp.fetch(url, options);
+      var responseText = response.getContentText();
+      var responseJson = JSON.parse(responseText);
+      
+      if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts[0]) {
+        var aiText = responseJson.candidates[0].content.parts[0].text;
+        return jsonResponse({ analysis: aiText });
+      } else {
+        return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
+      }
+    }
+
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) {
       sheet = checkAndCreateSheet(sheetName);
