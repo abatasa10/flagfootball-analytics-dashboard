@@ -23,6 +23,8 @@ const SHEET_POSITIONS = 'Master Position';
 const SHEET_ROUTES = 'Master Route';
 const SHEET_PLAYBOOK = 'Playbook';
 const SHEET_PLAY_ASSIGNMENT = 'Play Assignment';
+const SHEET_SESSION = 'Session';
+const SHEET_SESSION_PLAY = 'Session Play';
 
 // State Cache
 let cache = {
@@ -31,7 +33,9 @@ let cache = {
   positions: [],
   routes: [],
   playbooks: [],
-  playAssignments: []
+  playAssignments: [],
+  sessions: [],
+  sessionPlays: []
 };
 
 // Edit States
@@ -40,6 +44,7 @@ let editingPlayerId = null;
 let editingPositionId = null;
 let editingRouteId = null;
 let editingPlaybookId = null;
+let editingSessionId = null;
 
 // Upload States
 let uploadedImageBase64 = null;
@@ -92,6 +97,25 @@ const assignmentsCountLabel = document.getElementById('assignments-count-label')
 const assignmentRowsContainer = playbookAssignmentsModal.querySelector('#assignment-rows-container');
 const addAssignmentRowBtn = playbookAssignmentsModal.querySelector('#add-assignment-row-btn');
 
+// Session DOM Elements
+const sessionListView = document.getElementById('session-list-view');
+const sessionFormView = document.getElementById('session-form-view');
+const sessionTableBody = document.getElementById('session-table-body');
+const sessionFormTitle = document.getElementById('session-form-title');
+
+const newSessionBtn = document.getElementById('new-session-btn');
+const cancelSessionBtn = document.getElementById('cancel-session-btn');
+const saveSessionBtn = document.getElementById('save-session-btn');
+const doneSessionBtn = document.getElementById('done-session-btn');
+const addDriveBtn = document.getElementById('add-drive-btn');
+
+const sessionTypeInput = document.getElementById('session-type-input');
+const sessionOpponentInput = document.getElementById('session-opponent-input');
+const sessionDateInput = document.getElementById('session-date-input');
+const sessionOpponentScoreInput = document.getElementById('session-opponent-score-input');
+const sessionOurScorePreview = document.getElementById('session-our-score-preview');
+const sessionDrivesContainer = document.getElementById('session-drives-container');
+
 // Select Inputs in Player Form
 const playerTeamSelect = document.getElementById('player-team-select');
 const playerPositionSelect = document.getElementById('player-position-select');
@@ -117,6 +141,7 @@ const viewPanels = document.querySelectorAll('.view-panel');
 
 const viewTitlesMap = {
   dashboard: 'Dashboard Overview',
+  session: 'Session Tracking',
   team: 'Master Team',
   position: 'Master Positions',
   route: 'Master Route',
@@ -176,7 +201,8 @@ async function loadAllData() {
       loadPositions(),
       loadRoutes(),
       loadPlaybook(),
-      loadPlayers()
+      loadPlayers(),
+      loadSessions()
     ]);
   } catch (err) {
     console.error('Gagal mengambil seluruh data:', err);
@@ -450,6 +476,64 @@ async function loadPlayers() {
   }
 }
 
+// Load & Render Sessions
+async function loadSessions() {
+  if (!sessionTableBody) return;
+  sessionTableBody.innerHTML = `<tr><td colspan="8" class="table-empty">Memuat data sesi…</td></tr>`;
+  try {
+    const [sessionsData, sessionPlaysData] = await Promise.all([
+      fetchSheetData(SHEET_SESSION),
+      fetchSheetData(SHEET_SESSION_PLAY)
+    ]);
+
+    cache.sessions = Array.isArray(sessionsData) ? sessionsData : [];
+    cache.sessionPlays = Array.isArray(sessionPlaysData) ? sessionPlaysData : [];
+
+    if (!cache.sessions.length) {
+      sessionTableBody.innerHTML = `<tr><td colspan="8" class="table-empty">Belum ada sesi terdaftar.</td></tr>`;
+      return;
+    }
+
+    sessionTableBody.innerHTML = cache.sessions.map((s, i) => {
+      const id = s.session_id || '';
+      const statusClass = s.status === 'Done' ? 'badge badge-accent' : 'badge';
+      const statusLabel = s.status === 'Done' ? 'Selesai' : 'Sedang Berjalan';
+      
+      const score = (s.our_score !== undefined && s.opponent_score !== undefined) ? `${s.our_score}-${s.opponent_score}` : '-';
+      
+      let formattedDate = s.date || '-';
+      if (formattedDate && formattedDate !== '-') {
+        try {
+          const d = new Date(formattedDate);
+          if (!isNaN(d.getTime())) {
+            formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+          }
+        } catch(e) {}
+      }
+
+      return `
+        <tr>
+          <td>${i + 1}</td>
+          <td><strong>${id}</strong></td>
+          <td>${s.session_type || '-'}</td>
+          <td>${s.opponent || '-'}</td>
+          <td>${score}</td>
+          <td><span class="badge ${s.result === 'Win' ? 'badge-accent' : ''}" style="${s.result === 'Loss' ? 'background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2);' : ''}">${s.result || '-'}</span></td>
+          <td><span class="${statusClass}">${statusLabel}</span></td>
+          <td>
+            <button class="action-btn edit" onclick="startEditSession('${id}')">Edit</button>
+            <button class="action-btn delete" onclick="deleteRecord('${SHEET_SESSION}', '${id}')">Hapus</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+  } catch (err) {
+    sessionTableBody.innerHTML = `<tr><td colspan="8" class="table-empty" style="color: var(--danger);">Gagal: ${err.message}</td></tr>`;
+    throw err;
+  }
+}
+
 // ---------- 3. Dropdown Helpers ----------
 function populateTeamSelect() {
   // Save current selection
@@ -538,6 +622,9 @@ async function deleteRecord(sheetName, idValue) {
     } else if (sheetName === SHEET_PLAYERS) {
       if (editingPlayerId === idValue) cancelEditPlayer();
       await loadPlayers();
+    } else if (sheetName === SHEET_SESSION) {
+      if (editingSessionId === idValue) cancelEditSession();
+      await loadSessions();
     }
   } catch (err) {
     alert(`Gagal menghapus data: ${err.message}`);
@@ -1013,6 +1100,454 @@ playbookForm.addEventListener('submit', async (e) => {
   }
 });
 playbookCancelBtn.addEventListener('click', cancelEditPlaybook);
+
+// ---------- 5b. Session Tracking Actions ----------
+let driveCounter = 0;
+let playCounter = 0;
+
+function startEditSession(id) {
+  const s = cache.sessions.find(ses => ses.session_id === id);
+  if (!s) return;
+
+  editingSessionId = id;
+  sessionFormTitle.textContent = `Edit Sesi (${id})`;
+
+  sessionTypeInput.value = s.session_type || 'Scrimage Internal';
+  sessionOpponentInput.value = s.opponent || '';
+
+  if (s.date) {
+    try {
+      const d = new Date(s.date);
+      if (!isNaN(d.getTime())) {
+        sessionDateInput.value = d.toISOString().split('T')[0];
+      } else {
+        sessionDateInput.value = s.date;
+      }
+    } catch(e) {
+      sessionDateInput.value = s.date;
+    }
+  } else {
+    sessionDateInput.value = '';
+  }
+
+  sessionOpponentScoreInput.value = s.opponent_score || 0;
+  sessionOurScorePreview.textContent = s.our_score || 0;
+
+  sessionDrivesContainer.innerHTML = '';
+
+  // Get plays
+  const relatedPlays = cache.sessionPlays.filter(p => String(p.session_id).trim() === String(id).trim());
+
+  // Group by drive number
+  const drivesMap = {};
+  relatedPlays.forEach(p => {
+    const dn = p.drive_number || 1;
+    if (!drivesMap[dn]) drivesMap[dn] = [];
+    drivesMap[dn].push(p);
+  });
+
+  const driveNumbers = Object.keys(drivesMap).map(Number).sort((a,b) => a-b);
+  if (driveNumbers.length > 0) {
+    driveNumbers.forEach(dn => {
+      const driveCard = createDrivePanel(dn);
+      drivesMap[dn].forEach(playData => {
+        createPlayCard(driveCard, playData);
+      });
+    });
+    driveCounter = Math.max(...driveNumbers);
+  } else {
+    driveCounter = 0;
+  }
+
+  sessionListView.style.display = 'none';
+  sessionFormView.style.display = 'block';
+  viewTitle.textContent = 'Session Tracking';
+}
+
+function cancelEditSession() {
+  editingSessionId = null;
+  sessionFormTitle.textContent = 'Sesi Baru';
+  sessionTypeInput.value = 'Scrimage Internal';
+  sessionOpponentInput.value = '';
+  sessionDateInput.value = '';
+  sessionOpponentScoreInput.value = '0';
+  sessionOurScorePreview.textContent = '0';
+  sessionDrivesContainer.innerHTML = '';
+  driveCounter = 0;
+
+  sessionListView.style.display = 'block';
+  sessionFormView.style.display = 'none';
+  viewTitle.textContent = 'Session Tracking';
+}
+
+function createDrivePanel(driveNum = null) {
+  driveCounter++;
+  const num = driveNum || driveCounter;
+
+  const driveCard = document.createElement('div');
+  driveCard.className = 'drive-card';
+  driveCard.id = `drive-card-${num}`;
+  driveCard.dataset.drive = num;
+
+  driveCard.innerHTML = `
+    <div class="drive-card__header">
+      <h4 class="drive-card__title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <polygon points="5 3 19 12 5 21 5 3"></polygon>
+        </svg>
+        Drive <span class="drive-number-label">${num}</span>
+      </h4>
+      <div style="display: flex; gap: 8px;">
+        <button type="button" class="action-btn edit btn-add-play-to-drive" style="padding: 4px 8px; font-size: 0.68rem;">+ Tambah Play</button>
+        <button type="button" class="action-btn delete btn-remove-drive" style="padding: 4px 8px; font-size: 0.68rem;">Hapus Drive</button>
+      </div>
+    </div>
+    <div class="drive-card__body">
+      <div class="play-cards-container" style="display: flex; flex-direction: column; gap: 12px;"></div>
+    </div>
+  `;
+
+  driveCard.querySelector('.btn-add-play-to-drive').addEventListener('click', () => createPlayCard(driveCard));
+  driveCard.querySelector('.btn-remove-drive').addEventListener('click', () => {
+    driveCard.remove();
+    recalculateOurScore();
+  });
+
+  sessionDrivesContainer.appendChild(driveCard);
+  return driveCard;
+}
+
+function createPlayCard(driveCard, playData = null) {
+  playCounter++;
+  const playId = `play-${playCounter}`;
+  const container = driveCard.querySelector('.play-cards-container');
+
+  const playCard = document.createElement('div');
+  playCard.className = 'play-card';
+  playCard.id = playId;
+
+  const downOptions = [
+    'First To Mid', 'Second To Mid', 'Third To Mid', 'Fourth To Mid',
+    'First To Goal', 'Second To Goal', 'Third To Goal', 'Fourth To Goal',
+    'Extra Point 1pt', 'Extra Point 2pt', 'Safety'
+  ];
+
+  const catOptions = ['Long', 'Intermediate', 'Short', 'Run'];
+  const resOptions = ['Complete', 'Incomplete', 'Interception'];
+
+  const qbs = cache.players.filter(p => {
+    const pos = String(p.position || '').toLowerCase();
+    const secPos = String(p.secondary_position || '').toLowerCase();
+    return pos.includes('qb') || secPos.includes('qb');
+  });
+  const qbPlayers = qbs.length > 0 ? qbs : cache.players;
+
+  playCard.innerHTML = `
+    <div class="play-card__header">
+      <span class="play-card__title">Play Detail</span>
+      <button type="button" class="btn-remove-play">&times;</button>
+    </div>
+    <div class="play-card__grid">
+      <label>
+        Round of Match
+        <select class="play-round" required>
+          <option value="First Half">First Half</option>
+          <option value="Second Half">Second Half</option>
+        </select>
+      </label>
+      <label>
+        Down
+        <select class="play-down" required>
+          ${downOptions.map(d => `<option value="${d}">${d}</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Category Play
+        <select class="play-category" required>
+          ${catOptions.map(c => `<option value="${c}">${c}</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Play
+        <select class="play-playbook" required>
+          <option value="">Pilih Playbook</option>
+          ${cache.playbooks.map(p => `<option value="${p.play_id}">${p.play_name}</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Route
+        <select class="play-route" required>
+          <option value="">Pilih Rute</option>
+          ${cache.routes.map(r => `<option value="${r.route_id}">${r.route_name} (${r.abbreviation})</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        QB
+        <select class="play-qb" required>
+          <option value="">Pilih QB</option>
+          ${qbPlayers.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Target
+        <select class="play-target" required>
+          <option value="">Pilih Target</option>
+          ${cache.players.map(p => `<option value="${p.player_id}">${p.name} (#${p.jersey_number})</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Result
+        <select class="play-result" required>
+          <option value="">Pilih Result</option>
+          ${resOptions.map(r => `<option value="${r}">${r}</option>`).join('')}
+        </select>
+      </label>
+      <div class="play-conditional-container" style="grid-column: 1 / -1; display: none;"></div>
+    </div>
+  `;
+
+  const resultSelect = playCard.querySelector('.play-result');
+  const condContainer = playCard.querySelector('.play-conditional-container');
+
+  resultSelect.addEventListener('change', () => {
+    renderConditionalFields(resultSelect.value, condContainer);
+    recalculateOurScore();
+  });
+
+  playCard.querySelector('.btn-remove-play').addEventListener('click', () => {
+    playCard.remove();
+    recalculateOurScore();
+  });
+
+  if (playData) {
+    playCard.querySelector('.play-round').value = playData.round_of_match || 'First Half';
+    playCard.querySelector('.play-down').value = playData.down || 'First To Mid';
+    playCard.querySelector('.play-category').value = playData.category_play || 'Short';
+    playCard.querySelector('.play-playbook').value = playData.play_id || '';
+    playCard.querySelector('.play-route').value = playData.route_id || '';
+    playCard.querySelector('.play-qb').value = playData.qb_player_id || '';
+    playCard.querySelector('.play-target').value = playData.target_player_id || '';
+    playCard.querySelector('.play-result').value = playData.result || '';
+
+    renderConditionalFields(playData.result, condContainer, playData);
+  }
+
+  container.appendChild(playCard);
+  return playCard;
+}
+
+function renderConditionalFields(result, container, playData = null) {
+  container.innerHTML = '';
+  if (!result) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+
+  const cardDiv = document.createElement('div');
+  cardDiv.className = 'play-card__conditional';
+
+  if (result === 'Complete') {
+    cardDiv.innerHTML = `
+      <label>
+        Yards Gained (Yds)
+        <input type="number" class="cond-yards" value="${playData ? playData.yards : '0'}" required style="width: 100%;">
+      </label>
+      <label>
+        Touch Down
+        <select class="cond-touchdown" required>
+          <option value="No" ${playData && playData.touchdown === 'No' ? 'selected' : ''}>No</option>
+          <option value="Yes" ${playData && playData.touchdown === 'Yes' ? 'selected' : ''}>Yes</option>
+        </select>
+      </label>
+    `;
+    cardDiv.querySelector('.cond-touchdown').addEventListener('change', recalculateOurScore);
+
+  } else if (result === 'Incomplete') {
+    const reasons = ['Over Throw', 'Drop', 'Under Throw', 'Pass Defended', 'Bad Pass'];
+    const statuses = ['Next Down', 'Turn Over', 'Safety'];
+    cardDiv.innerHTML = `
+      <label>
+        Reason
+        <select class="cond-reason" required>
+          ${reasons.map(r => `<option value="${r}" ${playData && playData.reason_incomplete === r ? 'selected' : ''}>${r}</option>`).join('')}
+        </select>
+      </label>
+      <label>
+        Next Status
+        <select class="cond-status" required>
+          ${statuses.map(s => `<option value="${s}" ${playData && playData.next_status === s ? 'selected' : ''}>${s}</option>`).join('')}
+        </select>
+      </label>
+    `;
+  } else if (result === 'Interception') {
+    cardDiv.innerHTML = `
+      <label>
+        Return Yards (Yds)
+        <input type="number" class="cond-yards" value="${playData ? playData.yards : '0'}" required style="width: 100%;">
+      </label>
+      <label>
+        Pick Six
+        <select class="cond-picksix" required>
+          <option value="No" ${playData && playData.pick_six === 'No' ? 'selected' : ''}>No</option>
+          <option value="Yes" ${playData && playData.pick_six === 'Yes' ? 'selected' : ''}>Yes</option>
+        </select>
+      </label>
+    `;
+  }
+
+  container.appendChild(cardDiv);
+}
+
+function recalculateOurScore() {
+  let score = 0;
+  const playCards = document.querySelectorAll('.play-card');
+  playCards.forEach(card => {
+    const result = card.querySelector('.play-result').value;
+    if (result === 'Complete') {
+      const tdSelect = card.querySelector('.cond-touchdown');
+      if (tdSelect && tdSelect.value === 'Yes') {
+        score += 6;
+      }
+    }
+  });
+  sessionOurScorePreview.textContent = score;
+}
+
+async function saveSession(status) {
+  const opponent = sessionOpponentInput.value.trim();
+  const date = sessionDateInput.value;
+  if (!opponent || !date) {
+    alert('Harap isi nama Lawan dan Tanggal Sesi!');
+    return;
+  }
+
+  const ourScore = parseInt(sessionOurScorePreview.textContent, 10);
+  const opponentScore = parseInt(sessionOpponentScoreInput.value, 10) || 0;
+
+  let result = 'Draw';
+  if (ourScore > opponentScore) result = 'Win';
+  else if (ourScore < opponentScore) result = 'Loss';
+
+  const sessionData = {
+    session_type: sessionTypeInput.value,
+    opponent: opponent,
+    date: date,
+    our_score: ourScore,
+    opponent_score: opponentScore,
+    result: result,
+    status: status
+  };
+
+  const plays = [];
+  const driveCards = document.querySelectorAll('.drive-card');
+  driveCards.forEach(driveCard => {
+    const driveNum = parseInt(driveCard.dataset.drive, 10);
+    const playCards = driveCard.querySelectorAll('.play-card');
+
+    playCards.forEach(playCard => {
+      const round_of_match = playCard.querySelector('.play-round').value;
+      const down = playCard.querySelector('.play-down').value;
+      const category_play = playCard.querySelector('.play-category').value;
+      const play_id = playCard.querySelector('.play-playbook').value;
+      const route_id = playCard.querySelector('.play-route').value;
+      const qb_player_id = playCard.querySelector('.play-qb').value;
+      const target_player_id = playCard.querySelector('.play-target').value;
+      const resultVal = playCard.querySelector('.play-result').value;
+
+      let yards = 0;
+      let touchdown = 'No';
+      let reason_incomplete = '';
+      let next_status = '';
+      let pick_six = 'No';
+
+      if (resultVal === 'Complete') {
+        yards = parseInt(playCard.querySelector('.cond-yards').value, 10) || 0;
+        touchdown = playCard.querySelector('.cond-touchdown').value;
+      } else if (resultVal === 'Incomplete') {
+        reason_incomplete = playCard.querySelector('.cond-reason').value;
+        next_status = playCard.querySelector('.cond-status').value;
+      } else if (resultVal === 'Interception') {
+        yards = parseInt(playCard.querySelector('.cond-yards').value, 10) || 0;
+        pick_six = playCard.querySelector('.cond-picksix').value;
+      }
+
+      plays.push({
+        drive_number: driveNum,
+        round_of_match: round_of_match,
+        down: down,
+        category_play: category_play,
+        play_id: play_id,
+        route_id: route_id,
+        result: resultVal,
+        qb_player_id: qb_player_id,
+        target_player_id: target_player_id,
+        yards: yards,
+        touchdown: touchdown,
+        reason_incomplete: reason_incomplete,
+        next_status: next_status,
+        pick_six: pick_six
+      });
+    });
+  });
+
+  const saveBtn = status === 'Done' ? doneSessionBtn : saveSessionBtn;
+  saveBtn.disabled = true;
+  const originalText = saveBtn.textContent;
+  saveBtn.textContent = 'Menyimpan…';
+
+  try {
+    const action = editingSessionId ? 'update' : 'create';
+    const payload = {
+      sheet: SHEET_SESSION,
+      action: action,
+      data: sessionData,
+      plays: plays
+    };
+    if (editingSessionId) {
+      payload.id = editingSessionId;
+    }
+
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    });
+
+    const resJson = await res.json();
+    if (resJson.error) throw new Error(resJson.error);
+
+    alert('Sesi berhasil disimpan!');
+    cancelEditSession();
+    await loadSessions();
+  } catch (err) {
+    alert(`Gagal menyimpan sesi: ${err.message}`);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = originalText;
+  }
+}
+
+// Attach Session Event Listeners
+if (newSessionBtn) newSessionBtn.addEventListener('click', () => {
+  editingSessionId = null;
+  sessionFormTitle.textContent = 'Sesi Baru';
+  sessionListView.style.display = 'none';
+  sessionFormView.style.display = 'block';
+  sessionDrivesContainer.innerHTML = '';
+  driveCounter = 0;
+  createDrivePanel(); // Create a default first drive
+});
+
+if (cancelSessionBtn) cancelSessionBtn.addEventListener('click', cancelEditSession);
+if (saveSessionBtn) saveSessionBtn.addEventListener('click', () => saveSession('On Progress'));
+if (doneSessionBtn) doneSessionBtn.addEventListener('click', () => saveSession('Done'));
+if (addDriveBtn) addDriveBtn.addEventListener('click', () => createDrivePanel());
+if (sessionOpponentScoreInput) sessionOpponentScoreInput.addEventListener('input', recalculateOurScore);
+
+// Expose to window scope for onclick actions
+window.startEditSession = startEditSession;
 
 // ---------- 6. Micro-interactions ----------
 // Color picker label update

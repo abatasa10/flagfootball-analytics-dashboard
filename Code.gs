@@ -25,7 +25,10 @@ function doGet(e) {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 
     if (!sheet) {
-      return jsonResponse({ error: 'Sheet "' + sheetName + '" tidak ditemukan' });
+      sheet = checkAndCreateSheet(sheetName);
+      if (!sheet) {
+        return jsonResponse({ error: 'Sheet "' + sheetName + '" tidak ditemukan' });
+      }
     }
 
     var values = sheet.getDataRange().getValues();
@@ -57,7 +60,10 @@ function doPost(e) {
 
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
     if (!sheet) {
-      return jsonResponse({ error: 'Sheet "' + sheetName + '" tidak ditemukan' });
+      sheet = checkAndCreateSheet(sheetName);
+      if (!sheet) {
+        return jsonResponse({ error: 'Sheet "' + sheetName + '" tidak ditemukan' });
+      }
     }
 
     // Auto-generate ID configurations
@@ -67,7 +73,9 @@ function doPost(e) {
       'Master Position': { key: 'position_id', prefix: 'PS' },
       'Master Route': { key: 'route_id', prefix: 'RT' },
       'Playbook': { key: 'play_id', prefix: 'PB' },
-      'Play Assignment': { key: 'assignment_id', prefix: 'PA' }
+      'Play Assignment': { key: 'assignment_id', prefix: 'PA' },
+      'Session': { key: 'session_id', prefix: 'SS' },
+      'Session Play': { key: 'play_record_id', prefix: 'SP' }
     };
 
     var conf = idConfig[sheetName];
@@ -113,6 +121,26 @@ function doPost(e) {
                 var val = assignSheet.getRange(r, playIdColIdx).getValue();
                 if (String(val).trim() === String(idValue).trim()) {
                   assignSheet.deleteRow(r);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Cascade delete plays if it is Session
+      if (sheetName === 'Session') {
+        var playSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Session Play');
+        if (playSheet) {
+          var lastRowPlay = playSheet.getLastRow();
+          if (lastRowPlay > 1) {
+            var headersPlay = playSheet.getRange(1, 1, 1, playSheet.getLastColumn()).getValues()[0];
+            var sessionIdColIdx = headersPlay.indexOf('session_id') + 1;
+            if (sessionIdColIdx > 0) {
+              for (var r = lastRowPlay; r >= 2; r--) {
+                var val = playSheet.getRange(r, sessionIdColIdx).getValue();
+                if (String(val).trim() === String(idValue).trim()) {
+                  playSheet.deleteRow(r);
                 }
               }
             }
@@ -181,6 +209,41 @@ function doPost(e) {
         }
       }
 
+      // Cascade update plays if it is Session
+      if (sheetName === 'Session') {
+        var playSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Session Play');
+        if (playSheet) {
+          // 1. Delete existing plays
+          var lastRowPlay = playSheet.getLastRow();
+          if (lastRowPlay > 1) {
+            var headersPlay = playSheet.getRange(1, 1, 1, playSheet.getLastColumn()).getValues()[0];
+            var sessionIdColIdx = headersPlay.indexOf('session_id') + 1;
+            if (sessionIdColIdx > 0) {
+              for (var r = lastRowPlay; r >= 2; r--) {
+                var val = playSheet.getRange(r, sessionIdColIdx).getValue();
+                if (String(val).trim() === String(idValue).trim()) {
+                  playSheet.deleteRow(r);
+                }
+              }
+            }
+          }
+
+          // 2. Insert new plays
+          var plays = body.plays || [];
+          var headersPlay = playSheet.getRange(1, 1, 1, playSheet.getLastColumn()).getValues()[0];
+
+          plays.forEach(function (play) {
+            play['session_id'] = idValue;
+            play['play_record_id'] = generateNextId(playSheet, 'play_record_id', 'SP');
+
+            var newPlayRow = headersPlay.map(function (h) {
+              return play[h] !== undefined ? play[h] : '';
+            });
+            playSheet.appendRow(newPlayRow);
+          });
+        }
+      }
+
       return jsonResponse({ status: 'success', row: newRow, data: data });
     }
 
@@ -217,6 +280,25 @@ function doPost(e) {
             return asg[h] !== undefined ? asg[h] : '';
           });
           assignSheet.appendRow(newAsgRow);
+        });
+      }
+    }
+
+    // Save plays if it is Session
+    if (sheetName === 'Session') {
+      var playSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Session Play');
+      if (playSheet) {
+        var plays = body.plays || [];
+        var headersPlay = playSheet.getRange(1, 1, 1, playSheet.getLastColumn()).getValues()[0];
+
+        plays.forEach(function (play) {
+          play['session_id'] = nextId;
+          play['play_record_id'] = generateNextId(playSheet, 'play_record_id', 'SP');
+
+          var newPlayRow = headersPlay.map(function (h) {
+            return play[h] !== undefined ? play[h] : '';
+          });
+          playSheet.appendRow(newPlayRow);
         });
       }
     }
@@ -270,4 +352,28 @@ function generateNextId(sheet, idHeaderName, prefix) {
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function checkAndCreateSheet(sheetName) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(sheetName);
+  if (sheet) return sheet;
+
+  var defaultHeaders = {
+    'Master Player': ['player_id', 'name', 'nick_name', 'jersey_number', 'sport', 'position', 'secondary_position', 'height (cm)', 'weight (kg)', 'birth_date', 'team'],
+    'Master Team': ['team_id', 'team_name', 'abbreviation', 'description', 'primary_color'],
+    'Master Position': ['position_id', 'position_name', 'abbreviation', 'category'],
+    'Master Route': ['route_id', 'route_name', 'abbreviation', 'category', 'route_type', 'description', 'status'],
+    'Playbook': ['play_id', 'play_name', 'formation', 'offense_type', 'play_category', 'description', 'image', 'active'],
+    'Play Assignment': ['assignment_id', 'play_id', 'receiver', 'position', 'route_id'],
+    'Session': ['session_id', 'session_type', 'opponent', 'date', 'our_score', 'opponent_score', 'result', 'status'],
+    'Session Play': ['play_record_id', 'session_id', 'drive_number', 'round_of_match', 'down', 'category_play', 'play_id', 'route_id', 'result', 'qb_player_id', 'target_player_id', 'yards', 'touchdown', 'reason_incomplete', 'next_status', 'pick_six']
+  };
+
+  var headers = defaultHeaders[sheetName];
+  if (!headers) return null;
+
+  sheet = ss.insertSheet(sheetName);
+  sheet.appendRow(headers);
+  return sheet;
 }

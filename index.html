@@ -27,6 +27,15 @@
           </svg>
           Dashboard
         </button>
+        <button class="sidebar__nav-item" data-view="session">
+          <svg class="sidebar__nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <line x1="9" y1="12" x2="15" y2="12"></line>
+            <line x1="9" y1="16" x2="15" y2="16"></line>
+          </svg>
+          Session
+        </button>
 
         <div class="sidebar__nav-section">MASTER DATA</div>
         <button class="sidebar__nav-item" data-view="team">
@@ -342,6 +351,95 @@
               </div>
             </div>
           </div>
+        </section>
+
+        <!-- ================= VIEW: SESSION TRACKING ================= -->
+        <section id="view-session" class="view-panel">
+          
+          <!-- SUB-VIEW 1: SESSION LIST -->
+          <div id="session-list-view">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">Daftar Sesi Pelacakan</h2>
+              <button id="new-session-btn" class="btn-primary" style="padding: 8px 16px; font-weight: 600;">+ Sesi Baru</button>
+            </div>
+            
+            <div class="glass-card">
+              <div class="glass-card__body" style="padding: 0; overflow-x: auto;">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>ID Sesi</th>
+                      <th>Tipe</th>
+                      <th>Lawan</th>
+                      <th>Skor</th>
+                      <th>Hasil</th>
+                      <th>Status</th>
+                      <th>Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody id="session-table-body">
+                    <tr><td colspan="8" class="table-empty">Memuat data sesi…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- SUB-VIEW 2: NEW / EDIT SESSION FORM -->
+          <div id="session-form-view" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid var(--card-border); padding-bottom: 14px;">
+              <h2 id="session-form-title" style="font-size: 1.25rem; font-weight: 700; margin: 0; color: var(--text-primary);">Sesi Baru</h2>
+              <div style="display: flex; gap: 10px;">
+                <button id="cancel-session-btn" class="action-btn" style="padding: 8px 16px;">Batal</button>
+                <button id="save-session-btn" class="action-btn edit" style="padding: 8px 16px;">Simpan Draft</button>
+                <button id="done-session-btn" class="btn-primary" style="padding: 8px 16px; font-weight: 600;">Selesaikan Sesi</button>
+              </div>
+            </div>
+
+            <!-- Session Metadata Header Card -->
+            <div class="glass-card" style="margin-bottom: 20px;">
+              <div class="glass-card__body" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                <label>
+                  Tipe Sesi
+                  <select id="session-type-input" style="width: 100%;" required>
+                    <option value="Scrimage Internal">Scrimage Internal</option>
+                    <option value="Scrimage">Scrimage</option>
+                    <option value="Tournament">Tournament</option>
+                  </select>
+                </label>
+                <label>
+                  Lawan
+                  <input type="text" id="session-opponent-input" placeholder="Defense Depok Hawks" style="width: 100%;" required>
+                </label>
+                <label>
+                  Tanggal
+                  <input type="date" id="session-date-input" style="width: 100%;" required>
+                </label>
+                <label>
+                  Skor Lawan
+                  <input type="number" id="session-opponent-score-input" value="0" min="0" style="width: 100%;" required>
+                </label>
+                <div style="display: flex; flex-direction: column; justify-content: center; background: rgba(255,255,255,0.02); border: 1px dashed var(--card-border); border-radius: 6px; padding: 10px; text-align: center;">
+                  <span style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase;">Skor Kita (Auto)</span>
+                  <span id="session-our-score-preview" style="font-size: 1.5rem; font-weight: 800; color: var(--accent);">0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Drives Container -->
+            <div style="margin-bottom: 20px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 1rem; font-weight: 600; margin: 0; color: var(--text-primary);">Daftar Drives</h3>
+                <button id="add-drive-btn" class="action-btn edit" style="padding: 6px 12px;">+ Tambah Drive</button>
+              </div>
+              
+              <div id="session-drives-container" style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Drives & Plays appended dynamically here -->
+              </div>
+            </div>
+          </div>
+          
         </section>
 
         <!-- ================= VIEW: MASTER PLAYER ================= -->
