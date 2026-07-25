@@ -87,35 +87,23 @@ body {
 .sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px;
+  justify-content: center;
+  padding: 12px 6px;
   margin-bottom: 24px;
 }
 
 .sidebar__brand-logo {
-  height: 38px;
-  width: auto;
+  max-width: 92%;
+  height: auto;
+  max-height: 54px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px rgba(244, 184, 63, 0.2));
+  filter: drop-shadow(0 0 6px rgba(244, 184, 63, 0.15));
   transition: transform 0.3s ease;
 }
 
 .sidebar__brand:hover .sidebar__brand-logo {
-  transform: rotate(-5deg) scale(1.05);
+  transform: rotate(-3deg) scale(1.04);
 }
-
-.sidebar__brand-text {
-  font-family: 'Oswald', sans-serif;
-  font-weight: 700;
-  font-size: 1.15rem;
-  letter-spacing: 0.05em;
-  color: var(--text-primary);
-}
-
-.sidebar__brand-text .accent-text {
-  color: var(--accent);
-}
-
 .sidebar__nav {
   display: flex;
   flex-direction: column;

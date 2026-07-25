@@ -2,6 +2,14 @@
 const savedTheme = localStorage.getItem('theme') || 'dark';
 document.documentElement.setAttribute('data-theme', savedTheme);
 
+function updateThemeLogo(theme) {
+  const logoImg = document.getElementById('sidebar-brand-logo');
+  if (logoImg) {
+    logoImg.src = theme === 'dark' ? 'logo-dark.png' : 'logo-light.png';
+  }
+}
+updateThemeLogo(savedTheme);
+
 // ==========================================================
 // GANTI URL INI dengan URL Web App dari Apps Script kamu
 // Bentuknya: https://script.google.com/macros/s/xxxxxxxxxx/exec
@@ -1024,6 +1032,7 @@ if (themeToggleBtn) {
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
     document.documentElement.setAttribute('data-theme', newTheme);
     localStorage.setItem('theme', newTheme);
+    updateThemeLogo(newTheme);
   });
 }
 
