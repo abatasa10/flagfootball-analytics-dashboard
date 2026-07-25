@@ -124,180 +124,168 @@
       <div class="content-body">
         
         <!-- ================= VIEW: DASHBOARD ================= -->
+        <!-- ================= VIEW: DASHBOARD ================= -->
         <section id="view-dashboard" class="view-panel is-active">
-          <!-- Stats Grid -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-card__icon team-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                </svg>
-              </div>
-              <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-teams">0</div>
-                <div class="stat-card__label">Total Tim</div>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card__icon player-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
-              </div>
-              <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-players">0</div>
-                <div class="stat-card__label">Total Pemain</div>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card__icon position-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <circle cx="12" cy="12" r="10"></circle>
-                  <line x1="2" y1="12" x2="22" y2="12"></line>
-                </svg>
-              </div>
-              <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-positions">0</div>
-                <div class="stat-card__label">Total Posisi</div>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card__icon route-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-                  <polyline points="2 17 12 22 22 17"></polyline>
-                </svg>
-              </div>
-              <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-routes">0</div>
-                <div class="stat-card__label">Total Rute</div>
-              </div>
-            </div>
-
-            <div class="stat-card">
-              <div class="stat-card__icon plays-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                  <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                </svg>
-              </div>
-              <div class="stat-card__content">
-                <div class="stat-card__value" id="stat-playbook">0</div>
-                <div class="stat-card__label">Total Playbook</div>
-              </div>
+          
+          <!-- Dashboard Filters -->
+          <div class="dashboard-filters-bar" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
+            <div style="font-family: 'Oswald', sans-serif; font-size: 1rem; font-weight: 700; color: var(--accent); letter-spacing: 0.5px;">OFFENSE OVERVIEW</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <select id="dashboard-scrimmage-filter" style="padding: 6px 12px; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 6px; color: var(--text-primary); font-size: 0.85rem;">
+                <option value="ALL">Semua Sesi</option>
+              </select>
+              <button id="dashboard-filter-btn" class="btn-primary" style="padding: 6px 16px; font-size: 0.85rem; font-weight: 600;">Filter</button>
             </div>
           </div>
 
-          <!-- Dashboard Grid -->
-          <div class="dashboard-grid">
-            <!-- Playbook Sketch Card -->
-            <div class="glass-card span-2">
+          <!-- Offense Metrics Grid -->
+          <div class="offense-metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 16px; margin-bottom: 24px;">
+            <!-- CARD 1 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">TOTAL PLAYS</div>
+              <div id="dash-total-plays" style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">0</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">Offense Play count</div>
+            </div>
+            <!-- CARD 2 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">COMPLETION %</div>
+              <div id="dash-completion-rate" style="font-size: 1.75rem; font-weight: 800; color: #3b82f6; margin-bottom: 4px;">0%</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">Passing accuracy</div>
+            </div>
+            <!-- CARD 3 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">CATCH %</div>
+              <div id="dash-catch-rate" style="font-size: 1.75rem; font-weight: 800; color: var(--accent); margin-bottom: 4px;">0%</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">Reception rate</div>
+            </div>
+            <!-- CARD 4 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">TOTAL YARDS</div>
+              <div id="dash-total-yards" style="font-size: 1.75rem; font-weight: 800; color: #10b981; margin-bottom: 4px;">0</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">Yards gained</div>
+            </div>
+            <!-- CARD 5 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">TOUCHDOWNS</div>
+              <div id="dash-touchdowns" style="font-size: 1.75rem; font-weight: 800; color: #ef4444; margin-bottom: 4px;">0</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">TD scoring plays</div>
+            </div>
+            <!-- CARD 6 -->
+            <div class="glass-card" style="padding: 16px; text-align: center;">
+              <div style="font-size: 0.68rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px;">YARDS / PLAY</div>
+              <div id="dash-yards-per-play" style="font-size: 1.75rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px;">0.0</div>
+              <div class="dash-trend" style="font-size: 0.62rem; color: #10b981;">Average efficiency</div>
+            </div>
+          </div>
+
+          <!-- Middle Rows: Strengths, Effective Play, Performers -->
+          <div style="display: grid; grid-template-columns: 1.2fr 1.2fr 1fr; gap: 20px; margin-bottom: 24px;" class="dashboard-mid-row">
+            
+            <!-- STRENGTHS & WEAKNESSES -->
+            <div class="glass-card">
               <div class="glass-card__header">
-                <h3 class="glass-card__title">Gameplay Paling Efektif</h3>
-                <span class="badge badge-accent">Trips Right - Slant/Flat</span>
+                <h3 class="glass-card__title">Resume Tim (Offense)</h3>
               </div>
-              <div class="glass-card__body gameplay-sketch-container">
-                <div class="field-diagram">
-                  <div class="line LOS"></div>
-                  <!-- Field Markers -->
-                  <div class="field-player defender" style="top: 25%; left: 35%;">FS</div>
-                  <div class="field-player defender" style="top: 35%; left: 55%;">CB</div>
-                  <div class="field-player defender" style="top: 45%; left: 40%;">LB</div>
-                  <div class="field-player defender" style="top: 50%; left: 70%;">CB</div>
-
-                  <div class="field-player offenseQB" style="top: 75%; left: 50%;">QB</div>
-                  <div class="field-player offense" style="top: 60%; left: 42%;">C</div>
-                  <div class="field-player offense" style="top: 60%; left: 65%;">WR (Rio)</div>
-                  <div class="field-player offense" style="top: 60%; left: 78%;">WR (Bima)</div>
-                  <div class="field-player offense" style="top: 60%; left: 90%;">WR (Fajar)</div>
-                  
-                  <!-- SVG drawing routes -->
-                  <svg class="routes-canvas" viewBox="0 0 500 200">
-                    <!-- QB dropback -->
-                    <path d="M 250 150 L 250 170" stroke="#f4b83f" stroke-width="2" stroke-dasharray="4" fill="none"/>
-                    
-                    <!-- WR Slant Route -->
-                    <path d="M 325 120 L 325 80 L 270 40" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
-                    
-                    <!-- WR Flat Route -->
-                    <path d="M 390 120 L 390 100 L 450 90" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- C Route -->
-                    <path d="M 210 120 L 210 60 L 150 60" stroke="#7fd68a" stroke-width="2.5" fill="none" marker-end="url(#arrow)"/>
-
-                    <!-- Markers definition -->
-                    <defs>
-                      <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#7fd68a" />
-                      </marker>
-                    </defs>
-                  </svg>
+              <div class="glass-card__body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <!-- Strength (Kelebihan) -->
+                <div>
+                  <h4 style="font-size: 0.72rem; color: #10b981; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span> Kelebihan (Strength)
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 10px;" id="dash-strengths-container">
+                    <!-- Dynamic strengths -->
+                  </div>
                 </div>
-                <div class="gameplay-info">
-                  <div class="gameplay-stat">
-                    <div class="gameplay-stat__num">18x</div>
-                    <div class="gameplay-stat__label">Diputar</div>
-                  </div>
-                  <div class="gameplay-stat">
-                    <div class="gameplay-stat__num">15x (83%)</div>
-                    <div class="gameplay-stat__label">Sukses</div>
-                  </div>
-                  <div class="gameplay-stat">
-                    <div class="gameplay-stat__num">9.6 yds</div>
-                    <div class="gameplay-stat__label">Rata-rata Yards</div>
+                <!-- Weakness (Kelemahan) -->
+                <div>
+                  <h4 style="font-size: 0.72rem; color: #ef4444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
+                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #ef4444;"></span> Kelemahan (Weakness)
+                  </h4>
+                  <div style="display: flex; flex-direction: column; gap: 10px;" id="dash-weaknesses-container">
+                    <!-- Dynamic weaknesses -->
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- Top Performers Card -->
+            <!-- GAMEPLAY PALING EFEKTIF -->
             <div class="glass-card">
               <div class="glass-card__header">
+                <h3 class="glass-card__title">Gameplay Paling Efektif</h3>
+              </div>
+              <div class="glass-card__body" style="padding: 16px;" id="dash-effective-gameplay-container">
+                <!-- Dynamic effective play details & diagram -->
+              </div>
+            </div>
+
+            <!-- TOP PERFORMERS -->
+            <div class="glass-card">
+              <div class="glass-card__header" style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 8px;">
                 <h3 class="glass-card__title">Top Performers</h3>
               </div>
-              <div class="glass-card__body">
-                <ul class="performers-list">
-                  <li class="performer-item">
-                    <span class="performer-item__rank">1</span>
-                    <div class="performer-item__info">
-                      <div class="performer-item__name">Rio</div>
-                      <div class="performer-item__pos">WR</div>
-                    </div>
-                    <span class="performer-item__stat">420 yds</span>
-                  </li>
-                  <li class="performer-item">
-                    <span class="performer-item__rank">2</span>
-                    <div class="performer-item__info">
-                      <div class="performer-item__name">Bima</div>
-                      <div class="performer-item__pos">WR</div>
-                    </div>
-                    <span class="performer-item__stat">310 yds</span>
-                  </li>
-                  <li class="performer-item">
-                    <span class="performer-item__rank">3</span>
-                    <div class="performer-item__info">
-                      <div class="performer-item__name">Fajar</div>
-                      <div class="performer-item__pos">WR</div>
-                    </div>
-                    <span class="performer-item__stat">280 yds</span>
-                  </li>
-                  <li class="performer-item">
-                    <span class="performer-item__rank">4</span>
-                    <div class="performer-item__info">
-                      <div class="performer-item__name">Dani</div>
-                      <div class="performer-item__pos">QB</div>
-                    </div>
-                    <span class="performer-item__stat">150 yds</span>
-                  </li>
+              <div class="glass-card__body" style="padding: 12px;">
+                <!-- Mini Tab Switches -->
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--card-border); padding-bottom: 6px; margin-bottom: 10px;">
+                  <button class="performer-tab active" data-tab="yards" style="background: none; border: none; font-size: 0.65rem; color: var(--accent); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">Yards</button>
+                  <button class="performer-tab" data-tab="catch" style="background: none; border: none; font-size: 0.65rem; color: var(--text-muted); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">Catch</button>
+                  <button class="performer-tab" data-tab="td" style="background: none; border: none; font-size: 0.65rem; color: var(--text-muted); font-weight: 700; cursor: pointer; text-transform: uppercase; letter-spacing: 0.5px;">TD</button>
+                </div>
+                <ul class="performers-list" id="dash-performers-list">
+                  <!-- Dynamic top performers -->
                 </ul>
               </div>
             </div>
+
           </div>
+
+          <!-- Bottom Rows: Passing Distribution, Route Success, Recent Scrimmages -->
+          <div style="display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 20px;" class="dashboard-bottom-row">
+            
+            <!-- PASSING DISTRIBUTION -->
+            <div class="glass-card">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Passing Distribution</h3>
+              </div>
+              <div class="glass-card__body" style="height: 200px; position: relative;">
+                <canvas id="chart-pass-dist"></canvas>
+              </div>
+            </div>
+
+            <!-- ROUTE SUCCESS RATE -->
+            <div class="glass-card">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Route Success Rate</h3>
+              </div>
+              <div class="glass-card__body" style="height: 200px; position: relative;">
+                <canvas id="chart-route-success"></canvas>
+              </div>
+            </div>
+
+            <!-- RECENT SCRIMMAGES -->
+            <div class="glass-card">
+              <div class="glass-card__header">
+                <h3 class="glass-card__title">Recent Scrimmage</h3>
+              </div>
+              <div class="glass-card__body" style="padding: 0; overflow-x: auto;">
+                <table class="data-table" style="font-size: 0.75rem; width: 100%;">
+                  <thead>
+                    <tr>
+                      <th style="padding: 6px 10px;">Tanggal</th>
+                      <th style="padding: 6px 10px;">Lawan</th>
+                      <th style="padding: 6px 10px; text-align: center;">Plays</th>
+                      <th style="padding: 6px 10px; text-align: center;">Hasil</th>
+                      <th style="padding: 6px 10px; text-align: right;">Yards</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-recent-table-body">
+                    <!-- Dynamic recent scrimmages -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
         </section>
 
         <!-- ================= VIEW: MASTER TEAM ================= -->
@@ -858,6 +846,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

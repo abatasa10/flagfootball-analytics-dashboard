@@ -43,6 +43,9 @@ let editingTeamId = null;
 let editingPlayerId = null;
 let editingPositionId = null;
 let editingRouteId = null;
+let chartPassDist = null;
+let chartRouteSuccess = null;
+let activePerformerTab = 'yards';
 let editingPlaybookId = null;
 let editingSessionId = null;
 
@@ -167,6 +170,10 @@ navButtons.forEach(btn => {
 
     // Update Page Header Title
     viewTitle.textContent = viewTitlesMap[targetView] || 'Flag Football Stats';
+
+    if (targetView === 'dashboard') {
+      initDashboard();
+    }
   });
 });
 
@@ -204,6 +211,7 @@ async function loadAllData() {
       loadPlayers(),
       loadSessions()
     ]);
+    initDashboard();
   } catch (err) {
     console.error('Gagal mengambil seluruh data:', err);
   } finally {
@@ -225,7 +233,7 @@ async function loadTeams() {
     cache.teams = Array.isArray(data) ? data : [];
 
     // Update Dashboard Stat
-    statTeams.textContent = cache.teams.length;
+    if (statTeams) statTeams.textContent = cache.teams.length;
 
     // Populate team selection in Player form
     populateTeamSelect();
@@ -274,7 +282,7 @@ async function loadPositions() {
     cache.positions = Array.isArray(data) ? data : [];
 
     // Update Dashboard Stat
-    statPositions.textContent = cache.positions.length;
+    if (statPositions) statPositions.textContent = cache.positions.length;
 
     // Populate position selections in Player form
     populatePositionSelects();
@@ -315,7 +323,7 @@ async function loadRoutes() {
     cache.routes = Array.isArray(data) ? data : [];
 
     // Update Dashboard Stat
-    statRoutes.textContent = cache.routes.length;
+    if (statRoutes) statRoutes.textContent = cache.routes.length;
 
     if (!cache.routes.length) {
       routeTableBody.innerHTML = `<tr><td colspan="9" class="table-empty">Belum ada rute terdaftar.</td></tr>`;
@@ -361,7 +369,7 @@ async function loadPlaybook() {
     cache.playAssignments = Array.isArray(assignmentsData) ? assignmentsData : [];
 
     // Update Dashboard Stat
-    statPlaybook.textContent = cache.playbooks.length;
+    if (statPlaybook) statPlaybook.textContent = cache.playbooks.length;
 
     if (!cache.playbooks.length) {
       playbookListGrid.innerHTML = `<div class="loading-state">Belum ada taktik di playbook.</div>`;
@@ -440,7 +448,7 @@ async function loadPlayers() {
     cache.players = Array.isArray(data) ? data : [];
 
     // Update Dashboard Stat
-    statPlayers.textContent = cache.players.length;
+    if (statPlayers) statPlayers.textContent = cache.players.length;
 
     if (!cache.players.length) {
       playerTableBody.innerHTML = `<tr><td colspan="9" class="table-empty">Belum ada pemain terdaftar.</td></tr>`;
@@ -1745,3 +1753,623 @@ style.textContent = `
     }
   `;
 document.head.appendChild(style);
+
+// ---------- 8. Offense Overview Dashboard Logic ----------
+function initDashboard() {
+  const scrimmageSelect = document.getElementById('dashboard-scrimmage-filter');
+  if (!scrimmageSelect) return;
+  
+  // Populate sessions filter
+  const currentVal = scrimmageSelect.value || 'ALL';
+  scrimmageSelect.innerHTML = '<option value="ALL">Semua Sesi</option>';
+  
+  cache.sessions.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.session_id;
+    let dateStr = s.date || '';
+    if (dateStr) {
+      try {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit' });
+        }
+      } catch(e) {}
+    }
+    opt.textContent = `${s.opponent || 'Lawan'} (${dateStr})`;
+    scrimmageSelect.appendChild(opt);
+  });
+  
+  if (cache.sessions.some(s => s.session_id === currentVal)) {
+    scrimmageSelect.value = currentVal;
+  } else {
+    scrimmageSelect.value = 'ALL';
+  }
+  
+  // Run analytics
+  calculateDashboardAnalytics(scrimmageSelect.value);
+  
+  // Add filter listener
+  const filterBtn = document.getElementById('dashboard-filter-btn');
+  if (filterBtn && !filterBtn.dataset.listener) {
+    filterBtn.dataset.listener = 'true';
+    filterBtn.addEventListener('click', () => {
+      calculateDashboardAnalytics(scrimmageSelect.value);
+    });
+  }
+  
+  // Performer tabs listeners
+  const tabs = document.querySelectorAll('.performer-tab');
+  tabs.forEach(tab => {
+    if (!tab.dataset.listener) {
+      tab.dataset.listener = 'true';
+      tab.addEventListener('click', (e) => {
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.color = 'var(--text-muted)';
+          t.style.background = 'none';
+          t.style.borderBottom = 'none';
+        });
+        
+        tab.classList.add('active');
+        tab.style.color = 'var(--accent)';
+        tab.style.background = 'rgba(244, 184, 63, 0.05)';
+        tab.style.borderBottom = '2px solid var(--accent)';
+        
+        activePerformerTab = tab.dataset.tab;
+        renderTopPerformers(scrimmageSelect.value);
+      });
+    }
+  });
+}
+
+function calculateDashboardAnalytics(sessionIdFilter = 'ALL') {
+  // 1. Filter sessions
+  const filteredSessions = sessionIdFilter === 'ALL'
+    ? cache.sessions
+    : cache.sessions.filter(s => s.session_id === sessionIdFilter);
+    
+  const filteredSessionIds = filteredSessions.map(s => String(s.session_id).trim());
+  
+  // 2. Filter session plays
+  const filteredPlays = cache.sessionPlays.filter(p => {
+    return filteredSessionIds.includes(String(p.session_id).trim());
+  });
+  
+  // 3. Basic metrics calculation
+  const totalPlays = filteredPlays.length;
+  
+  const passingPlays = filteredPlays.filter(p => {
+    const res = String(p.result || '').trim().toLowerCase();
+    return res === 'complete' || res === 'incomplete' || res === 'interception';
+  });
+  const totalPasses = passingPlays.length;
+  
+  const completePlays = passingPlays.filter(p => String(p.result || '').trim().toLowerCase() === 'complete');
+  const totalCompletions = completePlays.length;
+  
+  const completionRate = totalPasses > 0 ? Math.round((totalCompletions / totalPasses) * 100) : 0;
+  const catchRate = completionRate; // Catch rate is completion rate in offensive view
+  
+  let totalYards = 0;
+  filteredPlays.forEach(p => {
+    if (String(p.result || '').trim().toLowerCase() === 'complete') {
+      totalYards += parseInt(p.yards, 10) || 0;
+    }
+  });
+  
+  const touchdowns = filteredPlays.filter(p => {
+    return String(p.touchdown || '').trim().toLowerCase() === 'yes';
+  }).length;
+  
+  const yardsPerPlay = totalPlays > 0 ? (totalYards / totalPlays).toFixed(1) : '0.0';
+  
+  // Update DOM elements for metric cards
+  const elTotalPlays = document.getElementById('dash-total-plays');
+  const elCompletionRate = document.getElementById('dash-completion-rate');
+  const elCatchRate = document.getElementById('dash-catch-rate');
+  const elTotalYards = document.getElementById('dash-total-yards');
+  const elTouchdowns = document.getElementById('dash-touchdowns');
+  const elYardsPerPlay = document.getElementById('dash-yards-per-play');
+
+  if (elTotalPlays) elTotalPlays.textContent = totalPlays;
+  if (elCompletionRate) elCompletionRate.textContent = `${completionRate}%`;
+  if (elCatchRate) elCatchRate.textContent = `${catchRate}%`;
+  if (elTotalYards) elTotalYards.textContent = totalYards.toLocaleString('id-ID');
+  if (elTouchdowns) elTouchdowns.textContent = touchdowns;
+  if (elYardsPerPlay) elYardsPerPlay.textContent = yardsPerPlay;
+  
+  // 4. Strengths & Weaknesses
+  renderStrengthsAndWeaknesses(filteredPlays);
+  
+  // 5. Effective Gameplay
+  renderEffectiveGameplay(filteredPlays);
+  
+  // 6. Top Performers
+  renderTopPerformers(sessionIdFilter);
+  
+  // 7. Recent Scrimmages
+  renderRecentScrimmages(filteredSessions);
+  
+  // 8. Passing Distribution & Route Success Charts
+  renderDashboardCharts(filteredPlays);
+}
+
+function renderStrengthsAndWeaknesses(filteredPlays) {
+  const passingPlays = filteredPlays.filter(p => {
+    const res = String(p.result || '').trim().toLowerCase();
+    return res === 'complete' || res === 'incomplete' || res === 'interception';
+  });
+  
+  // Short pass completions: category = short or category = run
+  const shortPasses = passingPlays.filter(p => {
+    const category = String(p.category_play || '').toLowerCase();
+    return category === 'short' || category === 'run';
+  });
+  const shortCompletions = shortPasses.filter(p => String(p.result || '').trim().toLowerCase() === 'complete').length;
+  const shortPassingRate = shortPasses.length > 0 ? Math.round((shortCompletions / shortPasses.length) * 100) : 0;
+  
+  // Screen Play success rate
+  const screenPasses = passingPlays.filter(p => {
+    const play = cache.playbooks.find(pl => pl.play_id === p.play_id);
+    const playName = String(play ? play.play_name : '').toLowerCase();
+    return playName.includes('screen') || String(p.category_play || '').toLowerCase() === 'run';
+  });
+  const screenCompletions = screenPasses.filter(p => String(p.result || '').trim().toLowerCase() === 'complete').length;
+  const screenSuccessRate = screenPasses.length > 0 ? Math.round((screenCompletions / screenPasses.length) * 100) : 100;
+  
+  // Average YAC
+  const completePlays = passingPlays.filter(p => String(p.result || '').trim().toLowerCase() === 'complete');
+  let sumYards = 0;
+  completePlays.forEach(p => sumYards += parseInt(p.yards, 10) || 0);
+  const avgYac = completePlays.length > 0 ? (sumYards / completePlays.length).toFixed(1) : '0.0';
+  
+  // 3rd down conversion rate
+  const thirdDowns = filteredPlays.filter(p => {
+    const d = String(p.down || '').toLowerCase();
+    return d.includes('third');
+  });
+  const thirdDownCompletions = thirdDowns.filter(p => String(p.result || '').trim().toLowerCase() === 'complete' || String(p.touchdown || '').trim().toLowerCase() === 'yes').length;
+  const thirdDownRate = thirdDowns.length > 0 ? Math.round((thirdDownCompletions / thirdDowns.length) * 100) : 0;
+  
+  // Deep passing completions
+  const deepPasses = passingPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long');
+  const deepCompletions = deepPasses.filter(p => String(p.result || '').trim().toLowerCase() === 'complete').length;
+  const deepPassingRate = deepPasses.length > 0 ? Math.round((deepCompletions / deepPasses.length) * 100) : 0;
+  
+  // Turnover rate
+  const turnovers = filteredPlays.filter(p => String(p.result || '').trim().toLowerCase() === 'interception').length;
+  const turnoverRate = filteredPlays.length > 0 ? ((turnovers / filteredPlays.length) * 100).toFixed(1) : '0.0';
+  
+  // Red Zone efficiency
+  const goalDowns = filteredPlays.filter(p => String(p.down || '').toLowerCase().includes('goal'));
+  const goalTDs = goalDowns.filter(p => String(p.touchdown || '').trim().toLowerCase() === 'yes').length;
+  const redZoneRate = goalDowns.length > 0 ? Math.round((goalTDs / goalDowns.length) * 100) : 0;
+
+  // Render Strength items
+  const strengthsContainer = document.getElementById('dash-strengths-container');
+  if (strengthsContainer) {
+    strengthsContainer.innerHTML = `
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Short Passing</div>
+          <div class="resume-item__desc">Akurasi operan pendek sangat baik.</div>
+        </div>
+        <div class="resume-item__value" style="color: #10b981;">${shortPassingRate}%</div>
+      </div>
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Screen Play</div>
+          <div class="resume-item__desc">Sangat efektif membongkar zone defense.</div>
+        </div>
+        <div class="resume-item__value" style="color: #10b981;">${screenSuccessRate}%</div>
+      </div>
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">YAC (Yards After Catch)</div>
+          <div class="resume-item__desc">Rata-rata yards per catch tinggi.</div>
+        </div>
+        <div class="resume-item__value" style="color: #10b981;">${avgYac} yds</div>
+      </div>
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Third Down Conversion</div>
+          <div class="resume-item__desc">Tingkat konversi down ketiga sangat solid.</div>
+        </div>
+        <div class="resume-item__value" style="color: #10b981;">${thirdDownRate}%</div>
+      </div>
+    `;
+  }
+  
+  // Render Weakness items
+  const weaknessesContainer = document.getElementById('dash-weaknesses-container');
+  if (weaknessesContainer) {
+    weaknessesContainer.innerHTML = `
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Deep Passing</div>
+          <div class="resume-item__desc">Akurasi operan jauh perlu ditingkatkan.</div>
+        </div>
+        <div class="resume-item__value" style="color: #ef4444;">${deepPassingRate}%</div>
+      </div>
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Turnover Rate</div>
+          <div class="resume-item__desc">Persentase operan terintersepsi musuh.</div>
+        </div>
+        <div class="resume-item__value" style="color: #ef4444;">${turnoverRate}%</div>
+      </div>
+      <div class="resume-item">
+        <div>
+          <div class="resume-item__title">Red Zone Efficiency</div>
+          <div class="resume-item__desc">Konversi skor touchdown di dekat gawang.</div>
+        </div>
+        <div class="resume-item__value" style="color: #ef4444;">${redZoneRate}%</div>
+      </div>
+    `;
+  }
+}
+
+function renderEffectiveGameplay(filteredPlays) {
+  const container = document.getElementById('dash-effective-gameplay-container');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  // Group by play_id
+  const playsMap = {};
+  filteredPlays.forEach(p => {
+    const playId = p.play_id;
+    if (!playId) return;
+    if (!playsMap[playId]) playsMap[playId] = [];
+    playsMap[playId].push(p);
+  });
+  
+  const playIds = Object.keys(playsMap);
+  if (playIds.length === 0) {
+    container.innerHTML = `<div class="table-empty">Belum ada taktik dimainkan dalam sesi ini.</div>`;
+    return;
+  }
+  
+  // Calculate success rates
+  const list = [];
+  playIds.forEach(id => {
+    const plays = playsMap[id];
+    const total = plays.length;
+    const complete = plays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+    const tds = plays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+    let sumYards = 0;
+    plays.forEach(p => sumYards += parseInt(p.yards, 10) || 0);
+    const avgYards = total > 0 ? (sumYards / total).toFixed(1) : 0;
+    
+    const successRate = total > 0 ? (complete / total) : 0;
+    
+    list.push({ play_id: id, total, complete, tds, avgYards, successRate });
+  });
+  
+  list.sort((a, b) => b.successRate - a.successRate || b.total - a.total);
+  
+  const topPlay = list[0];
+  const playbook = cache.playbooks.find(pl => pl.play_id === topPlay.play_id);
+  const playName = playbook ? playbook.play_name : 'Taktik Tidak Diketahui';
+  const diagramUrl = playbook ? playbook.image : '';
+  
+  const diagramHTML = diagramUrl 
+    ? `
+      <div class="play-card__hud-preview-wrapper" style="width: 100%; height: 110px; margin-bottom: 12px; background: rgba(0,0,0,0.2);" onclick="window.open('${diagramUrl}', '_blank')">
+        <img src="${diagramUrl}" class="play-card__hud-img" alt="Diagram Paling Efektif">
+      </div>
+    `
+    : `
+      <div style="width: 100%; height: 110px; border: 1px dashed var(--card-border); border-radius: 6px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.01); color: var(--text-muted); font-size: 0.72rem; margin-bottom: 12px;">
+        Diagram Tidak Tersedia
+      </div>
+    `;
+    
+  const successPct = Math.round(topPlay.successRate * 100);
+  
+  container.innerHTML = `
+    ${diagramHTML}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h5 class="play-card__hud-title" style="font-size: 0.88rem;">${playName}</h5>
+      <span class="badge badge-accent" style="font-size: 0.6rem;">Sukses</span>
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; background: rgba(255,255,255,0.01); border: 1px solid rgba(255, 255, 255, 0.03); border-radius: 6px; padding: 10px; text-align: center;">
+      <div>
+        <div style="font-size: 0.95rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${topPlay.total}x</div>
+        <div style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">Digunakan</div>
+      </div>
+      <div>
+        <div style="font-size: 0.95rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${topPlay.complete}x (${successPct}%)</div>
+        <div style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">Sukses</div>
+      </div>
+      <div>
+        <div style="font-size: 0.95rem; font-weight: 800; color: #10b981; font-family: 'Oswald', sans-serif;">${topPlay.avgYards} yds</div>
+        <div style="font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase;">Rata-rata Yards</div>
+      </div>
+    </div>
+    
+    <div style="margin-top: 10px; text-align: center;">
+      <button class="action-btn edit" style="width: 100%; font-size: 0.72rem; padding: 6px 12px;" onclick="window.switchView('playbook')">Lihat Detail Gameplay</button>
+    </div>
+  `;
+}
+
+function renderTopPerformers(sessionIdFilter = 'ALL') {
+  const container = document.getElementById('dash-performers-list');
+  if (!container) return;
+  container.innerHTML = '';
+  
+  const filteredSessions = sessionIdFilter === 'ALL'
+    ? cache.sessions
+    : cache.sessions.filter(s => s.session_id === sessionIdFilter);
+  const filteredSessionIds = filteredSessions.map(s => String(s.session_id).trim());
+  const filteredPlays = cache.sessionPlays.filter(p => filteredSessionIds.includes(String(p.session_id).trim()));
+  
+  const statsMap = {};
+  filteredPlays.forEach(p => {
+    const receiverId = p.target_player_id;
+    if (!receiverId) return;
+    if (!statsMap[receiverId]) {
+      statsMap[receiverId] = {
+        player_id: receiverId,
+        yards: 0,
+        catches: 0,
+        tds: 0
+      };
+    }
+    const isComplete = String(p.result || '').toLowerCase() === 'complete';
+    const isTD = String(p.touchdown || '').toLowerCase() === 'yes';
+    
+    if (isComplete) {
+      statsMap[receiverId].catches += 1;
+      statsMap[receiverId].yards += parseInt(p.yards, 10) || 0;
+    }
+    if (isTD) {
+      statsMap[receiverId].tds += 1;
+    }
+  });
+  
+  const performers = Object.values(statsMap);
+  if (performers.length === 0) {
+    container.innerHTML = `<li class="performer-item" style="justify-content: center; font-size: 0.72rem; color: var(--text-muted); padding: 12px 0;">Belum ada statistik pemain tersedia.</li>`;
+    return;
+  }
+  
+  performers.sort((a, b) => {
+    if (activePerformerTab === 'catch') {
+      return b.catches - a.catches || b.yards - a.yards;
+    } else if (activePerformerTab === 'td') {
+      return b.tds - a.tds || b.yards - a.yards;
+    } else {
+      return b.yards - a.yards || b.catches - a.catches;
+    }
+  });
+  
+  const top4 = performers.slice(0, 4);
+  
+  container.innerHTML = top4.map((p, index) => {
+    const player = cache.players.find(pl => pl.player_id === p.player_id);
+    const name = player ? player.name : 'Pemain';
+    const pos = player ? player.position : 'WR';
+    
+    let statLabel = '';
+    if (activePerformerTab === 'catch') {
+      statLabel = `${p.catches} catches`;
+    } else if (activePerformerTab === 'td') {
+      statLabel = `${p.tds} TDs`;
+    } else {
+      statLabel = `${p.yards} yds`;
+    }
+    
+    return `
+      <li class="performer-item" style="padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.01); display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+          <span class="performer-item__rank" style="background: rgba(244,184,63,0.1); color: var(--accent); border-radius: 50%; width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; margin-right: 10px;">${index + 1}</span>
+          <div class="performer-item__info">
+            <div class="performer-item__name" style="font-size: 0.78rem; font-weight: 600; color: var(--text-primary);">${name}</div>
+            <div class="performer-item__pos" style="font-size: 0.62rem; color: var(--text-muted); text-transform: uppercase;">${pos}</div>
+          </div>
+        </div>
+        <span class="performer-item__stat" style="font-size: 0.8rem; font-weight: 700; color: var(--accent);">${statLabel}</span>
+      </li>
+    `;
+  }).join('');
+  
+  const allBtn = document.createElement('div');
+  allBtn.style.marginTop = '10px';
+  allBtn.innerHTML = `<button class="action-btn edit" style="width: 100%; font-size: 0.72rem; padding: 5px 10px;" onclick="window.switchView('player')">Lihat Semua Pemain</button>`;
+  container.appendChild(allBtn);
+}
+
+function renderRecentScrimmages(filteredSessions) {
+  const tbody = document.getElementById('dash-recent-table-body');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  
+  const sorted = [...filteredSessions].sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0;
+    const db = b.date ? new Date(b.date).getTime() : 0;
+    return db - da;
+  });
+  
+  const latest5 = sorted.slice(0, 5);
+  
+  if (latest5.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="5" class="table-empty">Belum ada sesi latihan atau scrimmage.</td></tr>`;
+    return;
+  }
+  
+  tbody.innerHTML = latest5.map(s => {
+    const playsCount = cache.sessionPlays.filter(p => String(p.session_id).trim() === String(s.session_id).trim()).length;
+    
+    let formattedDate = s.date || '-';
+    if (formattedDate && formattedDate !== '-') {
+      try {
+        const d = new Date(formattedDate);
+        if (!isNaN(d.getTime())) {
+          formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        }
+      } catch(e) {}
+    }
+    
+    const res = s.result || '-';
+    let resClass = 'badge';
+    if (res === 'W') resClass = 'badge badge-accent';
+    
+    return `
+      <tr>
+        <td style="padding: 6px 10px;">${formattedDate}</td>
+        <td style="padding: 6px 10px; font-weight: 600;">${s.opponent || '-'}</td>
+        <td style="padding: 6px 10px; text-align: center;">${playsCount}</td>
+        <td style="padding: 6px 10px; text-align: center;"><span class="${resClass}" style="padding: 2px 6px; font-size: 0.6rem;">${res}</span></td>
+        <td style="padding: 6px 10px; text-align: right; font-weight: 700; color: #10b981;">${(s.our_score || 0).toLocaleString('id-ID')}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderDashboardCharts(filteredPlays) {
+  if (typeof Chart === 'undefined') return;
+  
+  // Chart 1: Passing Distribution
+  const passPlays = filteredPlays.filter(p => {
+    const res = String(p.result || '').toLowerCase();
+    return res === 'complete' || res === 'incomplete' || res === 'interception';
+  });
+  
+  let shortCount = 0;
+  let midCount = 0;
+  let longCount = 0;
+  
+  passPlays.forEach(p => {
+    const yards = parseInt(p.yards, 10) || 0;
+    if (yards <= 7) shortCount++;
+    else if (yards <= 15) midCount++;
+    else longCount++;
+  });
+  
+  const elPass = document.getElementById('chart-pass-dist');
+  if (elPass) {
+    const ctxPass = elPass.getContext('2d');
+    if (chartPassDist) {
+      chartPassDist.destroy();
+    }
+    
+    chartPassDist = new Chart(ctxPass, {
+      type: 'doughnut',
+      data: {
+        labels: ['Short (0-7 yds)', 'Mid (8-15 yds)', 'Long (16+ yds)'],
+        datasets: [{
+          data: [shortCount, midCount, longCount],
+          backgroundColor: ['#3b82f6', '#f4b83f', '#10b981'],
+          borderWidth: 1,
+          borderColor: '#1f2937'
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#9ca3af',
+              font: { size: 9 },
+              boxWidth: 8
+            }
+          }
+        },
+        cutout: '65%'
+      }
+    });
+  }
+  
+  // Chart 2: Route Success Rate
+  const routesCountMap = {};
+  const routesSuccessMap = {};
+  
+  filteredPlays.forEach(p => {
+    const routeId = p.route_id;
+    if (!routeId) return;
+    if (!routesCountMap[routeId]) {
+      routesCountMap[routeId] = 0;
+      routesSuccessMap[routeId] = 0;
+    }
+    routesCountMap[routeId]++;
+    if (String(p.result || '').toLowerCase() === 'complete') {
+      routesSuccessMap[routeId]++;
+    }
+  });
+  
+  const routeIds = Object.keys(routesCountMap);
+  const routeLabels = [];
+  const routeSuccessPct = [];
+  
+  routeIds.forEach(id => {
+    const route = cache.routes.find(r => r.route_id === id);
+    const label = route ? route.route_name : id;
+    const total = routesCountMap[id];
+    const success = routesSuccessMap[id];
+    const pct = total > 0 ? Math.round((success / total) * 100) : 0;
+    
+    routeLabels.push(label);
+    routeSuccessPct.push(pct);
+  });
+  
+  const zip = routeLabels.map((l, i) => ({ label: l, val: routeSuccessPct[i] }));
+  zip.sort((a, b) => b.val - a.val);
+  
+  const topLabels = zip.map(z => z.label).slice(0, 6);
+  const topValues = zip.map(z => z.val).slice(0, 6);
+  
+  const elRoute = document.getElementById('chart-route-success');
+  if (elRoute) {
+    const ctxRoute = elRoute.getContext('2d');
+    if (chartRouteSuccess) {
+      chartRouteSuccess.destroy();
+    }
+    
+    chartRouteSuccess = new Chart(ctxRoute, {
+      type: 'bar',
+      data: {
+        labels: topLabels.length > 0 ? topLabels : ['Slant', 'Screen', 'Out', 'Curl', 'Post', 'Go'],
+        datasets: [{
+          label: 'Success Rate (%)',
+          data: topValues.length > 0 ? topValues : [0, 0, 0, 0, 0, 0],
+          backgroundColor: 'rgba(59, 130, 246, 0.75)',
+          hoverBackgroundColor: '#3b82f6',
+          borderRadius: 4,
+          borderWidth: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { color: '#9ca3af', font: { size: 9 } }
+          },
+          y: {
+            min: 0,
+            max: 100,
+            grid: { color: 'rgba(255,255,255,0.04)' },
+            ticks: { color: '#9ca3af', font: { size: 9 }, stepSize: 20 }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
+    });
+  }
+}
+
+function switchView(viewName) {
+  const btn = document.querySelector(`.sidebar__nav-item[data-view="${viewName}"]`);
+  if (btn) {
+    btn.click();
+  }
+}
+
+window.switchView = switchView;
