@@ -21,6 +21,26 @@
 
 function doGet(e) {
   try {
+    var action = (e.parameter.action || '').trim().toLowerCase();
+    
+    if (action === 'inspectsource') {
+      var sourceSs = SpreadsheetApp.openById('1FwV_WuB-aDZb_EXXrR0CaDWwsG3mihonu5k4P6R1mdU');
+      var sheets = sourceSs.getSheets();
+      var info = sheets.map(function(s) {
+        return {
+          name: s.getName(),
+          rows: s.getLastRow(),
+          cols: s.getLastColumn(),
+          headers: s.getLastRow() > 0 ? s.getRange(1, 1, 1, Math.min(15, s.getLastColumn())).getValues()[0] : []
+        };
+      });
+      return jsonResponse(info);
+    }
+    
+    if (action === 'runimport') {
+      return jsonResponse(importPlayersFromSource());
+    }
+
     var sheetName = (e.parameter.sheet || 'Master Player').trim();
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 
@@ -416,4 +436,113 @@ function checkAndCreateSheet(sheetName) {
   sheet = ss.insertSheet(sheetName);
   sheet.appendRow(headers);
   return sheet;
+}
+
+function importPlayersFromSource() {
+  try {
+    var sourceSs = SpreadsheetApp.openById('1FwV_WuB-aDZb_EXXrR0CaDWwsG3mihonu5k4P6R1mdU');
+    var sourceSheet = sourceSs.getSheetByName('Form MB - Data Pemain');
+    if (!sourceSheet) {
+      return { error: 'Source sheet "Form MB - Data Pemain" tidak ditemukan di spreadsheet sumber.' };
+    }
+    
+    var destSs = SpreadsheetApp.getActiveSpreadsheet();
+    var destSheet = destSs.getSheetByName('Master Player');
+    if (!destSheet) {
+      return { error: 'Destination sheet "Master Player" tidak ditemukan.' };
+    }
+    
+    // Read source data
+    var sourceValues = sourceSheet.getDataRange().getValues();
+    var sourceHeaders = sourceValues[0];
+    
+    // Find column indexes of source
+    var colFullName = sourceHeaders.indexOf('Nama Lengkap');
+    var colJersey = sourceHeaders.indexOf('No Jersey');
+    var colNameOnJersey = sourceHeaders.indexOf('Nama di Jersey');
+    var colBirthDate = sourceHeaders.indexOf('Tanggal Lahir');
+    var colHeight = sourceHeaders.indexOf('Tinggi Badan');
+    var colWeight = sourceHeaders.indexOf('Berat Badan');
+    var colPrimaryPos = sourceHeaders.indexOf('Posisi Utama');
+    var colSecondaryPos = sourceHeaders.indexOf('Posisi Sekunder');
+    
+    // If some columns not found by exact string, let's search loosely
+    sourceHeaders.forEach(function(h, idx) {
+      var lower = String(h).toLowerCase();
+      if (colFullName === -1 && lower.indexOf('nama lengkap') !== -1) colFullName = idx;
+      if (colJersey === -1 && lower.indexOf('jersey') !== -1) colJersey = idx;
+      if (colNameOnJersey === -1 && (lower.indexOf('nama di jersey') !== -1 || lower.indexOf('nama punggung') !== -1)) colNameOnJersey = idx;
+      if (colBirthDate === -1 && lower.indexOf('tanggal lahir') !== -1) colBirthDate = idx;
+      if (colHeight === -1 && lower.indexOf('tinggi') !== -1) colHeight = idx;
+      if (colWeight === -1 && lower.indexOf('berat') !== -1) colWeight = idx;
+      if (colPrimaryPos === -1 && lower.indexOf('posisi utama') !== -1) colPrimaryPos = idx;
+      if (colSecondaryPos === -1 && lower.indexOf('posisi sekunder') !== -1) colSecondaryPos = idx;
+    });
+    
+    // Read destination data
+    var destValues = destSheet.getDataRange().getValues();
+    var destHeaders = destValues[0];
+    var destRows = destValues.slice(1);
+    
+    // Build set of existing names (cleaned)
+    var existingNames = {};
+    destRows.forEach(function(row) {
+      var name = String(row[destHeaders.indexOf('name')] || '').toLowerCase().trim();
+      if (name) existingNames[name] = true;
+    });
+    
+    var addedCount = 0;
+    var skippedCount = 0;
+    
+    // Helper to clean name (removes (C), (U18), stars, emojis, dsb)
+    function cleanName(n) {
+      return String(n)
+        .replace(/\([Cc]\)/g, '')
+        .replace(/\(U\d+\)/g, '')
+        .replace(/[⭐★✨]/g, '')
+        .trim();
+    }
+    
+    for (var i = 1; i < sourceValues.length; i++) {
+      var row = sourceValues[i];
+      var rawName = String(row[colFullName] || '').trim();
+      if (!rawName) continue;
+      
+      var cleanedName = cleanName(rawName);
+      var nameKey = cleanedName.toLowerCase();
+      
+      if (existingNames[nameKey]) {
+        skippedCount++;
+        continue;
+      }
+      
+      // Map properties
+      var newPlayer = {
+        'player_id': generateNextId(destSheet, 'player_id', 'PL'),
+        'name': cleanedName,
+        'nick_name': colNameOnJersey !== -1 ? String(row[colNameOnJersey] || '').trim() : '',
+        'jersey_number': colJersey !== -1 ? parseInt(row[colJersey], 10) || '' : '',
+        'sport': 'Flag Football',
+        'position': colPrimaryPos !== -1 ? String(row[colPrimaryPos] || '').trim() : '',
+        'secondary_position': colSecondaryPos !== -1 ? String(row[colSecondaryPos] || '').trim() : '',
+        'height (cm)': colHeight !== -1 ? parseInt(row[colHeight], 10) || '' : '',
+        'weight (kg)': colWeight !== -1 ? parseInt(row[colWeight], 10) || '' : '',
+        'birth_date': colBirthDate !== -1 ? String(row[colBirthDate] || '').trim() : '',
+        'team': 'Depok'
+      };
+      
+      // Append row
+      var newRow = destHeaders.map(function(h) {
+        return newPlayer[h] !== undefined ? newPlayer[h] : '';
+      });
+      destSheet.appendRow(newRow);
+      
+      existingNames[nameKey] = true;
+      addedCount++;
+    }
+    
+    return { status: 'success', added: addedCount, skipped: skippedCount };
+  } catch (err) {
+    return { error: err.message };
+  }
 }
