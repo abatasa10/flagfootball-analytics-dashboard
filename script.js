@@ -901,6 +901,20 @@ if (aiAnalyzeBtn) {
         throw new Error(result.error);
       }
       
+      // Auto-fill playbook form fields
+      if (result.play_name) playbookForm.play_name.value = result.play_name;
+      if (result.formation) playbookForm.formation.value = result.formation;
+      if (result.description) playbookForm.description.value = result.description;
+      if (result.offense_type) playbookForm.offense_type.value = result.offense_type;
+      if (result.play_category) {
+        let cat = result.play_category;
+        if (cat.toLowerCase().indexOf('inter') !== -1) cat = 'Intermediate';
+        else if (cat.toLowerCase().indexOf('short') !== -1) cat = 'Short';
+        else if (cat.toLowerCase().indexOf('deep') !== -1) cat = 'Deep';
+        else if (cat.toLowerCase().indexOf('screen') !== -1) cat = 'Screen';
+        playbookForm.play_category.value = cat;
+      }
+      
       const aiRoutes = result.routes || [];
       if (aiRoutes.length === 0) {
         alert('AI tidak menemukan rute apa pun di dalam gambar.');
@@ -940,7 +954,7 @@ if (aiAnalyzeBtn) {
         createAssignmentRow(receiver, positionVal, routeVal);
       });
       
-      alert('Analisis rute AI selesai! Silakan periksa rute yang terisi otomatis.');
+      alert('Analisis diagram selesai! Nama Play, Formasi, Deskripsi, Kategori, dan Rute berhasil terisi secara otomatis.');
     } catch (err) {
       alert('Gagal menganalisis diagram: ' + err.message + '\nPastikan GEMINI_API_KEY sudah diset di Script Properties.');
     } finally {

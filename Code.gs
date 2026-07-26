@@ -148,10 +148,26 @@ function doPost(e) {
       var base64String = Utilities.base64Encode(imageBlob.getBytes());
       var gMimeType = imageBlob.getContentType();
       
-      var promptText = "Analyze this flag football playbook diagram. Identify the routes assigned to each receiver (usually labeled as X, Y, Z, C, H, F, etc.). " +
-                       "For each receiver found in the diagram, specify their name/label and the name of the route they are running (choose from standard flag football routes like Slant, Flat, Hook, Curl, Out, In, Post, Go, Streak, Corner, Wheel, Fade, Screen). " +
-                       "Return the result ONLY as a JSON array of objects, with no markdown code blocks, no extra text, exactly in this format: " +
-                       "[{\"receiver\": \"X\", \"route_name\": \"Slant\"}, {\"receiver\": \"Y\", \"route_name\": \"Flat\"}, ...]";
+      var promptText = "Analyze this flag football playbook diagram. " +
+                       "Determine the following details for this play:\n" +
+                       "1. Recommended Name of the play (play_name, try to detect if written in the image, e.g. 'Hook / S-Post' or 'Dragon Weak', but remove numbering prefix like '1 - ')\n" +
+                       "2. Offensive formation (formation, e.g. 'Spread', 'Trips Right', 'Bunch', etc.)\n" +
+                       "3. Offense Type (offense_type, must choose one of: 'Pass', 'Run', 'RPO', 'Trick Play')\n" +
+                       "4. Play Category based on routes depth (play_category, must choose one of: 'Short', 'Intermediate', 'Deep', 'Screen')\n" +
+                       "5. Brief tactical description explaining the route combination (description)\n" +
+                       "6. Rute larinya (routes, array of objects containing 'receiver' (e.g. 'X', 'Y', 'Z', 'C', 'QB') and 'route_name' (choose from standard routes like: Slant, Flat, Hook, Curl, Out, In, Post, Go, Streak, Corner, Wheel, Fade, Screen))\n\n" +
+                       "Return the result ONLY as a JSON object, with no markdown code blocks, no extra text, exactly in this format:\n" +
+                       "{\n" +
+                       "  \"play_name\": \"...\",\n" +
+                       "  \"formation\": \"...\",\n" +
+                       "  \"offense_type\": \"...\",\n" +
+                       "  \"play_category\": \"...\",\n" +
+                       "  \"description\": \"...\",\n" +
+                       "  \"routes\": [\n" +
+                       "    {\"receiver\": \"X\", \"route_name\": \"...\"},\n" +
+                       "    ...\n" +
+                       "  ]\n" +
+                       "}";
                        
       var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + apiKey;
       var payload = {
