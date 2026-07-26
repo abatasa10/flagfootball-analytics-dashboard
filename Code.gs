@@ -111,7 +111,7 @@ function doPost(e) {
         muteHttpExceptions: true
       };
 
-      var response = UrlFetchApp.fetch(url, options);
+      var response = fetchWithRetry(url, options);
       var responseText = response.getContentText();
       var responseJson = JSON.parse(responseText);
       
@@ -228,7 +228,7 @@ function doPost(e) {
         muteHttpExceptions: true
       };
       
-      var response = UrlFetchApp.fetch(url, options);
+      var response = fetchWithRetry(url, options);
       var responseText = response.getContentText();
       var responseJson = JSON.parse(responseText);
       
@@ -244,6 +244,62 @@ function doPost(e) {
         } catch(e) {
           return jsonResponse({ error: 'Gagal memparsing JSON hasil analisis AI: ' + aiText });
         }
+      } else {
+        return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
+      }
+    }
+
+    // AI SESSION COACH EVALUATOR ROUTE
+    if (action === 'analyze_session') {
+      var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'GEMINI_API_KEY tidak ditemukan di Properties Script.' });
+      }
+      
+      var sessionInfo = body.session || {};
+      var plays = body.plays || [];
+      
+      var playRecordsText = "";
+      plays.forEach(function(p, idx) {
+        playRecordsText += "Play #" + (idx + 1) + ": Playbook: " + p.playbook + ", Route: " + p.route + ", QB: " + p.qb + ", Target: " + p.target + ", Result: " + p.result + ", Yards: " + p.yards + ", TD: " + p.td + "\n";
+      });
+      
+      var promptText = "You are a professional Flag Football Offensive Coach. Analyze the play-by-play statistics for this session and write a comprehensive, professional tactical analysis and coaching evaluation report.\n\n" +
+                       "SESSION DETAILS:\n" +
+                       "- Opponent: " + sessionInfo.opponent + "\n" +
+                       "- Type: " + sessionInfo.type + "\n" +
+                       "- Date: " + sessionInfo.date + "\n" +
+                       "- Score: Us " + sessionInfo.our_score + " - " + sessionInfo.opponent_score + " Opponent\n\n" +
+                       "PLAY-BY-PLAY DATA:\n" +
+                       playRecordsText + "\n" +
+                       "Write the coaching evaluation report in INDONESIAN. Do not use markdown code blocks (like ```). Format it clearly using standard clean headings, bullet points, and paragraphs. Include the following sections:\n" +
+                       "1. RINGKASAN PERTANDINGAN: Summarize the match outcome and general offensive flow.\n" +
+                       "2. ANALISA KEKUATAN & EFISIENSI: Identify which playbook concepts, routes, and target players were highly successful (include metrics like completion rate or yards per play where relevant).\n" +
+                       "3. EVALUASI KELEMAHAN & KESALAHAN: Analyze turnovers, incomplete passes, failed plays, and why they happened.\n" +
+                       "4. REKOMENDASI TAKTIS EVALUATIF: Give specific, actionable coaching advice on what plays/routes/connections to run more, what to avoid, and adjustments for the next match.\n\n" +
+                       "Be specific, use football terminology, and refer directly to the players (Harry, Ridwan, Lamberte, Bayu, Heavenly, Satya, Fadhil, dsb.) and plays/routes from the data.";
+                       
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + apiKey;
+      var payload = {
+        contents: [{
+          parts: [{ text: promptText }]
+        }]
+      };
+      
+      var options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+      
+      var response = fetchWithRetry(url, options);
+      var responseText = response.getContentText();
+      var responseJson = JSON.parse(responseText);
+      
+      if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts[0]) {
+        var aiText = responseJson.candidates[0].content.parts[0].text;
+        return jsonResponse({ analysis: aiText });
       } else {
         return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
       }
@@ -994,4 +1050,31 @@ function importPlayRecords() {
     status: 'success',
     message: 'Session ' + nextSessionId + ' and ' + addedCount + ' plays imported successfully!'
   };
+}
+
+function fetchWithRetry(url, options) {
+  var maxRetries = 3;
+  var attempt = 0;
+  var delayMs = 2000;
+
+  while (attempt < maxRetries) {
+    try {
+      var response = UrlFetchApp.fetch(url, options);
+      var code = response.getResponseCode();
+      
+      if ((code === 503 || code === 429 || code === 500) && attempt < maxRetries - 1) {
+        attempt++;
+        Utilities.sleep(delayMs * attempt);
+        continue;
+      }
+      return response;
+    } catch (e) {
+      if (attempt < maxRetries - 1) {
+        attempt++;
+        Utilities.sleep(delayMs * attempt);
+        continue;
+      }
+      throw e;
+    }
+  }
 }
