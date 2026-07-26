@@ -809,25 +809,34 @@ function cancelEditPlayer() {
 
 // Dynamic Row Builder for Playbook Assignments in Modal
 function createAssignmentRow(receiver = '', positionVal = '', routeVal = '') {
+  console.log('createAssignmentRow called with:', { receiver, positionVal, routeVal });
   const row = document.createElement('div');
   row.className = 'assignment-row';
 
   const receivers = ['X', 'Y', 'Z', 'C', 'QB'];
-  const receiverOptions = receivers.map(rec => `
-      <option value="${rec}" ${rec === receiver ? 'selected' : ''}>${rec}</option>
-    `).join('');
+  const receiverOptions = receivers.map(rec => {
+    const isSelected = String(rec).toLowerCase().trim() === String(receiver).toLowerCase().trim();
+    return `<option value="${rec}" ${isSelected ? 'selected' : ''}>${rec}</option>`;
+  }).join('');
 
-  const posOptions = cache.positions.map(p => `
-      <option value="${p.abbreviation}" ${p.abbreviation === positionVal ? 'selected' : ''}>
+  const posOptions = cache.positions.map(p => {
+    const isSelected = String(p.abbreviation).toLowerCase().trim() === String(positionVal).toLowerCase().trim();
+    return `
+      <option value="${p.abbreviation}" ${isSelected ? 'selected' : ''}>
         ${p.abbreviation}
       </option>
-    `).join('');
+    `;
+  }).join('');
 
-  const routeOptions = cache.routes.map(r => `
-      <option value="${r.abbreviation}" ${r.abbreviation === routeVal ? 'selected' : ''}>
+  const routeOptions = cache.routes.map(r => {
+    const isSelected = String(r.abbreviation).toLowerCase().trim() === String(routeVal).toLowerCase().trim() ||
+                       String(r.route_id).toLowerCase().trim() === String(routeVal).toLowerCase().trim();
+    return `
+      <option value="${r.abbreviation}" ${isSelected ? 'selected' : ''}>
         ${r.route_name} (${r.abbreviation})
       </option>
-    `).join('');
+    `;
+  }).join('');
 
   row.innerHTML = `
       <select name="asg_receiver[]" required style="width: 100px;">
