@@ -42,6 +42,10 @@ function doGet(e) {
       return jsonResponse(importPlayersFromSource());
     }
 
+    if (action === 'runimportplayrecords') {
+      return jsonResponse(importPlayRecords());
+    }
+
     var sheetName = (e.parameter.sheet || 'Master Player').trim();
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
 
@@ -802,4 +806,192 @@ function testAuthorize() {
   // Force Drive App full write scope authorization request
   var folder = DriveApp.createFolder("Temp Playmetrics Auth Folder DeleteMe");
   folder.setTrashed(true); // move to trash immediately
+}
+
+function importPlayRecords() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // 1. Create the new Session
+  var sessionSheet = ss.getSheetByName('Session');
+  if (!sessionSheet) {
+    sessionSheet = checkAndCreateSheet('Session');
+  }
+  var nextSessionId = generateNextId(sessionSheet, 'session_id', 'SS');
+  
+  // Date format: Today's date in local time
+  var todayStr = "2026-07-26";
+  
+  var newSession = {
+    'session_id': nextSessionId,
+    'session_type': 'Scrimmage',
+    'opponent': 'Defense Depok Hawks',
+    'date': todayStr,
+    'our_score': 42,
+    'opponent_score': 20,
+    'result': 'Win',
+    'status': 'Selesai'
+  };
+  
+  var sHeaders = sessionSheet.getRange(1, 1, 1, sessionSheet.getLastColumn()).getValues()[0];
+  var sRow = sHeaders.map(function(h) {
+    return newSession[h] !== undefined ? newSession[h] : '';
+  });
+  sessionSheet.appendRow(sRow);
+  
+  // 2. Map players, playbooks, routes
+  var playerMap = {
+    'harry': 'PL002',
+    'ridwan': 'PL001',
+    'lamberte': 'PL003',
+    'bayu': 'PL004',
+    'heavenly': 'PL010',
+    'satya': 'PL008',
+    'fadhil': 'PL009'
+  };
+  
+  var routeMap = {
+    'slant out': 'SO',
+    'hook': 'H',
+    'slant in': 'SL',
+    'post': 'PO',
+    'dig in': 'QI',
+    'go': 'GO',
+    'curl': 'H',
+    'corner': 'CO',
+    '-': ''
+  };
+  
+  // Get Playbook list
+  var playbookSheet = ss.getSheetByName('Playbook');
+  if (!playbookSheet) {
+    playbookSheet = checkAndCreateSheet('Playbook');
+  }
+  
+  // A helper function to find or create playbook play
+  function getOrCreatePlayId(playName, category) {
+    var pValues = playbookSheet.getDataRange().getValues();
+    var pHeaders = pValues[0];
+    var pRows = pValues.slice(1);
+    
+    var nameIdx = pHeaders.indexOf('play_name');
+    var idIdx = pHeaders.indexOf('play_id');
+    
+    var nameLower = playName.toLowerCase().trim();
+    
+    // Check if exists
+    for (var i = 0; i < pRows.length; i++) {
+      var existingName = String(pRows[i][nameIdx]).toLowerCase().trim();
+      if (existingName === nameLower || 
+          (nameLower === 'hook spot' && existingName.indexOf('hook') !== -1) ||
+          (nameLower === 'corner smash' && existingName.indexOf('smash') !== -1)) {
+        var existingId = String(pRows[i][idIdx]).trim();
+        if (existingId) {
+          return existingId;
+        } else {
+          // If ID is empty, generate and write it to that row
+          var newId = generateNextId(playbookSheet, 'play_id', 'PB');
+          playbookSheet.getRange(i + 2, idIdx + 1).setValue(newId);
+          return newId;
+        }
+      }
+    }
+    
+    // Create new playbook play
+    var nextPlayId = generateNextId(playbookSheet, 'play_id', 'PB');
+    var newPlay = {
+      'play_id': nextPlayId,
+      'play_name': playName,
+      'formation': 'Spread',
+      'offense_type': playName === 'QB Run' ? 'Run' : 'Pass',
+      'play_category': category === 'Long' ? 'Deep' : (category === 'Intermediate' ? 'Intermediate' : category),
+      'description': 'Imported during session setup',
+      'image': '',
+      'active': 'Aktif'
+    };
+    
+    var newPlayRow = pHeaders.map(function(h) {
+      return newPlay[h] !== undefined ? newPlay[h] : '';
+    });
+    playbookSheet.appendRow(newPlayRow);
+    return nextPlayId;
+  }
+  
+  // 3. Insert all plays
+  var playSheet = ss.getSheetByName('Session Play');
+  if (!playSheet) {
+    playSheet = checkAndCreateSheet('Session Play');
+  }
+  
+  var pHeaders = playSheet.getRange(1, 1, 1, playSheet.getLastColumn()).getValues()[0];
+  var playsData = [
+    { play_num: 1, category: "Short", playbook: "Slant Flat", route: "Slant Out", qb: "Harry", target: "Ridwan", result: "Complete", yards: 7, td: "No" },
+    { play_num: 2, category: "Intermediate", playbook: "Hook Spot", route: "Hook", qb: "Harry", target: "Lamberte", result: "Complete", yards: 11, td: "No" },
+    { play_num: 3, category: "Short", playbook: "Slant Flat", route: "Slant In", qb: "Harry", target: "Bayu", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 4, category: "Long", playbook: "Post", route: "Post", qb: "Harry", target: "Heavenly", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 5, category: "Intermediate", playbook: "Dig", route: "Dig In", qb: "Harry", target: "Ridwan", result: "Complete", yards: 9, td: "No" },
+    { play_num: 6, category: "Long", playbook: "Go", route: "Go", qb: "Harry", target: "Bayu", result: "Interception", yards: 0, td: "No" },
+    { play_num: 7, category: "Run", playbook: "QB Run", route: "-", qb: "Harry", target: "Harry", result: "Run", yards: 6, td: "No" },
+    { play_num: 8, category: "Short", playbook: "Slant Flat", route: "Slant Out", qb: "Harry", target: "Satya", result: "Complete", yards: 8, td: "No" },
+    { play_num: 9, category: "Intermediate", playbook: "Curl", route: "Curl", qb: "Harry", target: "Fadhil", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 10, category: "Long", playbook: "Corner", route: "Corner", qb: "Harry", target: "Lamberte", result: "Complete", yards: 18, td: "No" },
+    { play_num: 11, category: "Short", playbook: "Slant Flat", route: "Slant In", qb: "Harry", target: "Ridwan", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 12, category: "Intermediate", playbook: "Hook Spot", route: "Hook", qb: "Harry", target: "Bayu", result: "Complete", yards: 12, td: "No" },
+    { play_num: 13, category: "Intermediate", playbook: "Corner Smash", route: "Corner", qb: "Harry", target: "Heavenly", result: "Touchdown", yards: 15, td: "Yes" },
+    { play_num: 14, category: "Long", playbook: "Go", route: "Go", qb: "Harry", target: "Ridwan", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 15, category: "Short", playbook: "Slant Flat", route: "Slant Out", qb: "Harry", target: "Bayu", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 16, category: "Intermediate", playbook: "Dig", route: "Dig In", qb: "Harry", target: "Lamberte", result: "Complete", yards: 13, td: "No" },
+    { play_num: 17, category: "Intermediate", playbook: "Hook Spot", route: "Hook", qb: "Harry", target: "Ridwan", result: "Interception", yards: 0, td: "No" },
+    { play_num: 18, category: "Short", playbook: "Slant Flat", route: "Slant In", qb: "Harry", target: "Fadhil", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 19, category: "Intermediate", playbook: "Curl", route: "Curl", qb: "Harry", target: "Bayu", result: "Complete", yards: 10, td: "No" },
+    { play_num: 20, category: "Long", playbook: "Post", route: "Post", qb: "Harry", target: "Heavenly", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 21, category: "Intermediate", playbook: "Hook Spot", route: "Hook", qb: "Harry", target: "Ridwan", result: "Touchdown", yards: 10, td: "Yes" },
+    { play_num: 22, category: "Short", playbook: "Slant Flat", route: "Slant Out", qb: "Harry", target: "Bayu", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 23, category: "Long", playbook: "Go", route: "Go", qb: "Harry", target: "Lamberte", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 24, category: "Intermediate", playbook: "Corner Smash", route: "Corner", qb: "Harry", target: "Bayu", result: "Touchdown", yards: 22, td: "Yes" },
+    { play_num: 25, category: "Short", playbook: "Slant Flat", route: "Slant In", qb: "Harry", target: "Ridwan", result: "Incomplete", yards: 0, td: "No" },
+    { play_num: 26, category: "Intermediate", playbook: "Dig", route: "Dig In", qb: "Harry", target: "Heavenly", result: "Interception", yards: 0, td: "No" }
+  ];
+  
+  var addedCount = 0;
+  playsData.forEach(function(p) {
+    var pId = getOrCreatePlayId(p.playbook, p.category);
+    var rId = routeMap[p.route.toLowerCase().trim()] !== undefined ? routeMap[p.route.toLowerCase().trim()] : '';
+    
+    var qbId = playerMap[p.qb.toLowerCase().trim()] || '';
+    var targetId = playerMap[p.target.toLowerCase().trim()] || '';
+    
+    var outcome = p.result;
+    if (outcome === 'Run') outcome = 'Complete';
+    if (outcome === 'Touchdown') outcome = 'Complete';
+    
+    var newRecord = {
+      'play_record_id': generateNextId(playSheet, 'play_record_id', 'SP'),
+      'session_id': nextSessionId,
+      'drive_number': 1,
+      'round_of_match': 1,
+      'down': 1,
+      'category_play': p.category === 'Run' ? 'Run' : 'Pass',
+      'play_id': pId,
+      'route_id': rId,
+      'result': outcome,
+      'qb_player_id': qbId,
+      'target_player_id': targetId,
+      'yards': p.yards,
+      'touchdown': p.td === 'Yes' ? 'Yes' : 'No',
+      'reason_incomplete': p.result === 'Incomplete' ? 'Dropped/Overthrow' : '',
+      'next_status': '',
+      'pick_six': 'No'
+    };
+    
+    var newRow = pHeaders.map(function(h) {
+      return newRecord[h] !== undefined ? newRecord[h] : '';
+    });
+    playSheet.appendRow(newRow);
+    addedCount++;
+  });
+  
+  return {
+    status: 'success',
+    message: 'Session ' + nextSessionId + ' and ' + addedCount + ' plays imported successfully!'
+  };
 }
