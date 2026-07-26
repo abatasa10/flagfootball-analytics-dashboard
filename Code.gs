@@ -202,8 +202,8 @@ function doPost(e) {
         aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
         
         try {
-          var parsedRoutes = JSON.parse(aiText);
-          return jsonResponse({ routes: parsedRoutes });
+          var parsedData = JSON.parse(aiText);
+          return jsonResponse(parsedData);
         } catch(e) {
           return jsonResponse({ error: 'Gagal memparsing JSON hasil analisis AI: ' + aiText });
         }
