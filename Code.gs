@@ -716,5 +716,8 @@ function importPlayersFromSource() {
 }
 
 function testAuthorize() {
-  UrlFetchApp.fetch("https://generativelanguage.googleapis.com");
+  var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey;
+  var response = UrlFetchApp.fetch(url);
+  Logger.log(response.getContentText());
 }
