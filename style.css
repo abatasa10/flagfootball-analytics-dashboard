@@ -1697,3 +1697,14 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+#playbook-paste-zone:focus {
+  border-color: var(--accent-color, #d97706) !important;
+  background: rgba(217, 119, 6, 0.05) !important;
+  box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
+}
+
+#playbook-paste-zone:hover {
+  border-color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.04);
+}

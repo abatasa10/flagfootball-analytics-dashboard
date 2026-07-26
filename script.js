@@ -1006,25 +1006,69 @@ playbookImageFile.addEventListener('change', (e) => {
 document.addEventListener('paste', (e) => {
   console.log('Paste event detected globally');
   const activeBtn = document.querySelector('.sidebar__nav-item.is-active');
-  if (!activeBtn) {
-    console.log('Active navigation button not found');
-    return;
-  }
-  console.log('Active view is:', activeBtn.getAttribute('data-view'));
+  if (!activeBtn) return;
   if (activeBtn.getAttribute('data-view') !== 'playbook') return;
   
   const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-  console.log('Clipboard items count:', items.length);
   for (let i = 0; i < items.length; i++) {
-    console.log('Clipboard item type:', items[i].type);
     if (items[i].type.indexOf('image') !== -1) {
       const file = items[i].getAsFile();
-      console.log('Found image file in clipboard:', file.name, file.type, file.size);
+      console.log('Global paste matched image:', file.name, file.size);
       handlePlaybookImage(file);
       break;
     }
   }
 });
+
+// Setup paste zone drag-drop & paste event handlers
+const playbookPasteZone = document.getElementById('playbook-paste-zone');
+if (playbookPasteZone) {
+  playbookPasteZone.addEventListener('paste', (e) => {
+    console.log('Paste event triggered on specific paste zone!');
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        console.log('Paste zone matched image:', file.name, file.size);
+        handlePlaybookImage(file);
+        // Prevent default input paste behavior if focused
+        e.preventDefault();
+        break;
+      }
+    }
+  });
+
+  playbookPasteZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    playbookPasteZone.style.borderColor = 'var(--accent-color, #d97706)';
+    playbookPasteZone.style.background = 'rgba(217, 119, 6, 0.05)';
+  });
+
+  playbookPasteZone.addEventListener('dragleave', () => {
+    playbookPasteZone.style.borderColor = '';
+    playbookPasteZone.style.background = '';
+  });
+
+  playbookPasteZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    playbookPasteZone.style.borderColor = '';
+    playbookPasteZone.style.background = '';
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.indexOf('image') !== -1) {
+        console.log('Dropped image on paste zone:', file.name, file.size);
+        handlePlaybookImage(file);
+      } else {
+        alert('File yang di-drop harus berupa gambar!');
+      }
+    }
+  });
+
+  // Clicking paste zone prompts focusing it
+  playbookPasteZone.addEventListener('click', () => {
+    playbookPasteZone.focus();
+  });
+}
 
 // Attach functions to window scope for onclick actions
 window.startEditTeam = startEditTeam;

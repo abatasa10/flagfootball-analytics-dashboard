@@ -884,12 +884,14 @@
                     <input type="text" name="description" placeholder="Slant/Flat combination on right side">
                   </label>
                   <label>
-                    Upload Diagram Taktik (Gambar)
-                    <input type="file" id="playbook-image-file" accept="image/*" style="padding: 6px;">
+                    Upload / Paste Diagram Taktik (Gambar)
+                    <input type="file" id="playbook-image-file" accept="image/*" style="padding: 6px; width: 100%;">
                     <input type="hidden" name="image" id="playbook-image-url">
-                    <span style="font-size: 0.68rem; color: var(--text-muted); display: block; margin-top: 4px;">
-                      💡 <strong>Tips:</strong> Anda bisa langsung menekan <code>Ctrl+V</code> / <code>Cmd+V</code> di halaman ini untuk menempelkan (paste) gambar dari clipboard.
-                    </span>
+                    <div id="playbook-paste-zone" tabindex="0" style="border: 2px dashed var(--card-border); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; margin-top: 8px; background: rgba(255,255,255,0.02); outline: none; transition: all 0.2s;">
+                      <div style="font-size: 1.2rem; margin-bottom: 4px;">📋</div>
+                      <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Klik di sini lalu tekan Ctrl+V / Cmd+V</div>
+                      <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 2px;">untuk menempelkan gambar dari clipboard</div>
+                    </div>
                   </label>
                   <div id="playbook-image-preview-container" style="display: none; margin-top: 8px;">
                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Preview File Baru:</div>
