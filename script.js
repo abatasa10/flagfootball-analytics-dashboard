@@ -1242,6 +1242,11 @@ async function submitFormData(sheetName, data, statusEl, submitBtn, action = 'cr
       payload.id = idValue;
     }
 
+    if (data.image_file) {
+      payload.image_file = data.image_file;
+      delete data.image_file;
+    }
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
