@@ -1170,7 +1170,6 @@ if (playbookPasteZone) {
 }
 
 // Setup Route specific paste zone
-const routePasteZone = document.getElementById('route-paste-zone');
 if (routePasteZone) {
   routePasteZone.addEventListener('paste', (e) => {
     console.log('Paste event triggered on route specific paste zone!');
