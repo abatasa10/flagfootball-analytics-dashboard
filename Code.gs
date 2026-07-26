@@ -736,4 +736,7 @@ function testAuthorize() {
   var url = 'https://generativelanguage.googleapis.com/v1beta/models?key=' + apiKey;
   var response = UrlFetchApp.fetch(url);
   Logger.log(response.getContentText());
+  
+  // Force Drive App scope authorization request
+  DriveApp.getRootFolder();
 }
