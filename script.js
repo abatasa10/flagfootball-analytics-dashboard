@@ -1253,7 +1253,14 @@ async function submitFormData(sheetName, data, statusEl, submitBtn, action = 'cr
       body: JSON.stringify(payload)
     });
 
-    const result = await res.json();
+    const text = await res.text();
+    let result;
+    try {
+      result = JSON.parse(text);
+    } catch (jsonErr) {
+      console.error('Raw Server Response:', text);
+      throw new Error('Server tidak mengembalikan JSON valid. Respon: ' + text.substring(0, 150));
+    }
     if (result.error) throw new Error(result.error);
 
     statusEl.textContent = 'Tersimpan ✓';
