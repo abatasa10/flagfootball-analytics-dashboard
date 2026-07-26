@@ -3477,3 +3477,33 @@ function renderPlayerAnalysis(playerId) {
 }
 
 window.switchView = switchView;
+
+// ---------- 10. Mobile Menu Drawer Controls ----------
+document.addEventListener('DOMContentLoaded', () => {
+  const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
+  const sidebar = document.querySelector('.sidebar');
+  const sidebarOverlay = document.getElementById('mobile-sidebar-overlay');
+
+  if (mobileMenuToggle && sidebar && sidebarOverlay) {
+    // Open sidebar
+    mobileMenuToggle.addEventListener('click', () => {
+      sidebar.classList.add('is-open');
+      sidebarOverlay.style.display = 'block';
+    });
+
+    // Close helper
+    const closeMobileSidebar = () => {
+      sidebar.classList.remove('is-open');
+      sidebarOverlay.style.display = 'none';
+    };
+
+    // Close when overlay is clicked
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+
+    // Close when any sidebar item is clicked (page switches)
+    const navItems = document.querySelectorAll('.sidebar__nav-item');
+    navItems.forEach(item => {
+      item.addEventListener('click', closeMobileSidebar);
+    });
+  }
+});
