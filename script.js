@@ -977,14 +977,14 @@ closeAssignmentsModalBtn.addEventListener('click', closeAssignmentsModal);
 saveAssignmentsModalBtn.addEventListener('click', closeAssignmentsModal);
 
 // Playbook Diagram image file upload Base64 reader
-playbookImageFile.addEventListener('change', (e) => {
-  const file = e.target.files[0];
+// Playbook Diagram image file handler
+function handlePlaybookImage(file) {
   if (file) {
     const reader = new FileReader();
     reader.onload = function (evt) {
       uploadedImageBase64 = evt.target.result.split(',')[1];
-      uploadedImageName = file.name;
-      uploadedImageType = file.type;
+      uploadedImageName = file.name || 'clipboard_pasted_image.png';
+      uploadedImageType = file.type || 'image/png';
 
       playbookImagePreview.src = evt.target.result;
       playbookImagePreviewContainer.style.display = 'block';
@@ -995,6 +995,25 @@ playbookImageFile.addEventListener('change', (e) => {
     uploadedImageName = '';
     uploadedImageType = '';
     playbookImagePreviewContainer.style.display = 'none';
+  }
+}
+
+playbookImageFile.addEventListener('change', (e) => {
+  handlePlaybookImage(e.target.files[0]);
+});
+
+// Paste event handler for clipboard images
+document.addEventListener('paste', (e) => {
+  const activeBtn = document.querySelector('.sidebar__nav-item.is-active');
+  if (!activeBtn || activeBtn.getAttribute('data-view') !== 'playbook') return;
+  
+  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const file = items[i].getAsFile();
+      handlePlaybookImage(file);
+      break;
+    }
   }
 });
 
