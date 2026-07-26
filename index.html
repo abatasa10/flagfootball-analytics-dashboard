@@ -1009,69 +1009,83 @@
         <h3 class="modal-card__title" id="session-detail-title">Detail Sesi</h3>
         <button type="button" class="modal-card__close-btn" id="close-session-detail-modal-btn">&times;</button>
       </div>
-      <div class="modal-card__body" style="max-height: 75vh; overflow-y: auto;">
-        <!-- Session Summary Grid -->
-        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; flex-wrap: wrap;">
+      <div class="modal-card__body" style="max-height: 75vh; overflow-y: auto; padding: 20px;">
+        <!-- Top KPI Cards Row -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <!-- Card 1: Session Info -->
+          <div class="glass-card" style="padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); display: flex; flex-direction: column; justify-content: center;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Lawan & Sesi</div>
+            <div style="font-size: 0.88rem; font-weight: bold; margin-top: 4px; color: var(--text-primary);" id="sd-opponent">-</div>
+            <div style="font-size: 0.65rem; color: var(--accent); margin-top: 2px;" id="sd-type-date">-</div>
+          </div>
+          <!-- Card 2: Completion Rate -->
+          <div class="glass-card" style="padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); text-align: center;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Completion %</div>
+            <div style="font-size: 1.3rem; font-family: 'Oswald', sans-serif; font-weight: bold; color: var(--accent); margin-top: 2px;" id="sd-comp-pct">0%</div>
+            <div style="font-size: 0.65rem; color: var(--text-secondary);" id="sd-comp-fraction">(0/0)</div>
+          </div>
+          <!-- Card 3: Yards Performance -->
+          <div class="glass-card" style="padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); text-align: center;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Yards / Play</div>
+            <div style="font-size: 1.3rem; font-family: 'Oswald', sans-serif; font-weight: bold; color: var(--success); margin-top: 2px;" id="sd-avg-yards">0</div>
+            <div style="font-size: 0.65rem; color: var(--text-secondary);" id="sd-total-yards">0 total yds</div>
+          </div>
+          <!-- Card 4: Touchdowns -->
+          <div class="glass-card" style="padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); text-align: center;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Touchdowns</div>
+            <div style="font-size: 1.3rem; font-family: 'Oswald', sans-serif; font-weight: bold; color: #d97706; margin-top: 2px;" id="sd-tds">0</div>
+            <div style="font-size: 0.65rem; color: var(--text-secondary);">Score: <strong id="sd-score" style="color: var(--text-primary);">-</strong></div>
+          </div>
+          <!-- Card 5: Interceptions -->
+          <div class="glass-card" style="padding: 12px 16px; background: var(--card-bg); border: 1px solid var(--card-border); text-align: center;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Interceptions</div>
+            <div style="font-size: 1.3rem; font-family: 'Oswald', sans-serif; font-weight: bold; color: var(--danger); margin-top: 2px;" id="sd-ints">0</div>
+            <div style="font-size: 0.65rem; color: var(--text-secondary);">Plays: <span id="sd-total-plays">-</span></div>
+          </div>
+        </div>
+
+        <!-- Bottom Layout: Plays Table & AI Coach -->
+        <div class="session-detail-grid" style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; align-items: stretch;">
           
-          <!-- Left Column: Stats & Plays -->
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="glass-card" style="padding: 16px; background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border);">
-              <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--accent);">Ringkasan Statistik Sesi</h4>
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.78rem; color: var(--text-primary);">
-                <div>Tipe Sesi: <strong id="sd-type" style="color: var(--text-primary);">-</strong></div>
-                <div>Lawan: <strong id="sd-opponent" style="color: var(--text-primary);">-</strong></div>
-                <div>Tanggal: <strong id="sd-date" style="color: var(--text-primary);">-</strong></div>
-                <div>Skor Akhir: <strong id="sd-score" style="color: var(--text-primary);">-</strong></div>
-                <div>Total Play: <strong id="sd-total-plays" style="color: var(--text-primary);">0</strong></div>
-                <div>Completion %: <strong id="sd-comp-pct" style="color: var(--text-primary);">0%</strong></div>
-                <div>Total Yards: <strong id="sd-total-yards" style="color: var(--text-primary);">0</strong></div>
-                <div>Yards/Play: <strong id="sd-avg-yards" style="color: var(--text-primary);">0</strong></div>
-                <div>Touchdown: <strong id="sd-tds" style="color: var(--text-primary);">0</strong></div>
-                <div>Interception: <strong id="sd-ints" style="color: var(--text-primary);">0</strong></div>
-              </div>
-            </div>
-            
-            <div class="glass-card" style="padding: 16px; background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); flex: 1; display: flex; flex-direction: column;">
-              <h4 style="margin-top: 0; margin-bottom: 10px; color: var(--text-primary);">Play-by-Play Sesi</h4>
-              <div class="table-wrap" style="max-height: 250px; overflow-y: auto; font-size: 0.72rem; flex: 1;">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th style="color: var(--text-primary);">#</th>
-                      <th style="color: var(--text-primary);">Playbook</th>
-                      <th style="color: var(--text-primary);">Rute</th>
-                      <th style="color: var(--text-primary);">Target</th>
-                      <th style="color: var(--text-primary);">Hasil</th>
-                      <th style="color: var(--text-primary);">Yards</th>
-                    </tr>
-                  </thead>
-                  <tbody id="session-detail-plays-body" style="color: var(--text-primary);">
-                    <!-- Dynamic plays list -->
-                  </tbody>
-                </table>
-              </div>
+          <!-- Play-by-Play Sesi Card -->
+          <div class="glass-card" style="padding: 16px 20px; background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); display: flex; flex-direction: column;">
+            <h4 style="margin-top: 0; margin-bottom: 12px; color: var(--text-primary); font-family: 'Oswald', sans-serif; font-size: 0.95rem; text-transform: uppercase; border-bottom: 1px solid var(--card-border); padding-bottom: 6px;">Play-by-Play Sesi</h4>
+            <div class="table-wrap" style="max-height: 380px; overflow-y: auto; font-size: 0.74rem; flex: 1;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="color: var(--text-primary); padding: 8px;">#</th>
+                    <th style="color: var(--text-primary); padding: 8px;">Playbook</th>
+                    <th style="color: var(--text-primary); padding: 8px;">Rute</th>
+                    <th style="color: var(--text-primary); padding: 8px;">Target</th>
+                    <th style="color: var(--text-primary); padding: 8px;">Hasil</th>
+                    <th style="color: var(--text-primary); padding: 8px;">Yards</th>
+                  </tr>
+                </thead>
+                <tbody id="session-detail-plays-body" style="color: var(--text-primary);">
+                  <!-- Dynamic plays list -->
+                </tbody>
+              </table>
             </div>
           </div>
           
-          <!-- Right Column: AI Analysis Report -->
-          <div style="display: flex; flex-direction: column; gap: 16px;">
-            <div class="glass-card" style="padding: 20px; background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); flex: 1; display: flex; flex-direction: column; min-height: 380px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h4 style="margin: 0; color: var(--accent);">Coach AI Evaluator</h4>
-                <button type="button" id="btn-session-ai-analyze" class="btn-primary" style="padding: 6px 12px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
-                  🤖 Analisis Evaluasi (AI)
-                </button>
+          <!-- Coach AI Evaluator Card -->
+          <div class="glass-card" style="padding: 16px 20px; background: var(--card-bg); color: var(--text-primary); border: 1px solid var(--card-border); display: flex; flex-direction: column; min-height: 440px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--card-border); padding-bottom: 6px;">
+              <h4 style="margin: 0; color: var(--accent); font-family: 'Oswald', sans-serif; font-size: 0.95rem; text-transform: uppercase;">Coach AI Evaluator</h4>
+              <button type="button" id="btn-session-ai-analyze" class="btn-primary" style="padding: 6px 12px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                🤖 Analisis Evaluasi (AI)
+              </button>
+            </div>
+            
+            <!-- Report Box -->
+            <div id="session-ai-report-container" style="flex: 1; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; overflow-y: auto; font-size: 0.78rem; line-height: 1.5; color: var(--text-primary); font-family: inherit;">
+              <div id="session-ai-report-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center; padding: 20px;">
+                <div style="font-size: 2.2rem; margin-bottom: 8px;">📊</div>
+                <div>Klik tombol <strong>Analisis Evaluasi (AI)</strong> untuk mendapatkan laporan taktis, analisa efisiensi, dan evaluasi hasil pertandingan dari Coach AI.</div>
               </div>
-              
-              <!-- Report Box -->
-              <div id="session-ai-report-container" style="flex: 1; background: var(--input-bg); border: 1px solid var(--card-border); border-radius: 8px; padding: 16px; overflow-y: auto; font-size: 0.78rem; line-height: 1.5; color: var(--text-primary); font-family: inherit;">
-                <div id="session-ai-report-placeholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted); text-align: center;">
-                  <div style="font-size: 2rem; margin-bottom: 8px;">📊</div>
-                  <div>Klik tombol <strong>Analisis Evaluasi (AI)</strong> untuk mendapatkan laporan taktis, analisa efisiensi, dan evaluasi hasil pertandingan dari Coach AI.</div>
-                </div>
-                <div id="session-ai-report-content" style="display: none; white-space: pre-wrap; font-size: 0.76rem; color: var(--text-primary);">
-                  <!-- Dynamic AI Report text -->
-                </div>
+              <div id="session-ai-report-content" style="display: none; white-space: pre-wrap; font-size: 0.76rem; color: var(--text-primary);">
+                <!-- Dynamic AI Report text -->
               </div>
             </div>
           </div>

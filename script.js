@@ -1057,7 +1057,6 @@ async function viewSessionDetail(id) {
   
   // Fill text details
   document.getElementById('session-detail-title').textContent = `Detail Sesi: ${session.opponent || '-'} (${id})`;
-  document.getElementById('sd-type').textContent = session.session_type || '-';
   document.getElementById('sd-opponent').textContent = session.opponent || '-';
   
   let formattedDate = session.date || '-';
@@ -1069,7 +1068,7 @@ async function viewSessionDetail(id) {
       }
     } catch(e) {}
   }
-  document.getElementById('sd-date').textContent = formattedDate;
+  document.getElementById('sd-type-date').textContent = `${session.session_type || '-'} | ${formattedDate}`;
   
   const score = (session.our_score !== undefined && session.opponent_score !== undefined) ? `${session.our_score}-${session.opponent_score}` : '-';
   document.getElementById('sd-score').textContent = score;
@@ -1086,7 +1085,11 @@ async function viewSessionDetail(id) {
   let ints = 0;
 
   plays.forEach(p => {
-    if (p.category_play === 'Pass' || p.category_play === 'pass') {
+    // If it's not a run, then it's a pass play attempt
+    const category = String(p.category_play || '').toLowerCase().trim();
+    const isRun = category === 'run';
+    
+    if (!isRun) {
       attempts++;
       if (p.result === 'Complete' || p.result === 'complete' || p.result === 'Touchdown' || p.result === 'touchdown') {
         completions++;
@@ -1104,9 +1107,10 @@ async function viewSessionDetail(id) {
   const compPct = attempts > 0 ? Math.round((completions / attempts) * 100) : 0;
   const avgYards = plays.length > 0 ? (yards / plays.length).toFixed(1) : '0';
 
-  document.getElementById('sd-comp-pct').textContent = `${compPct}% (${completions}/${attempts})`;
-  document.getElementById('sd-total-yards').textContent = yards;
-  document.getElementById('sd-avg-yards').textContent = avgYards;
+  document.getElementById('sd-comp-pct').textContent = `${compPct}%`;
+  document.getElementById('sd-comp-fraction').textContent = `(${completions}/${attempts} Passes)`;
+  document.getElementById('sd-total-yards').textContent = `${yards} total yds`;
+  document.getElementById('sd-avg-yards').textContent = `${avgYards} yds`;
   document.getElementById('sd-tds').textContent = tds;
   document.getElementById('sd-ints').textContent = ints;
 

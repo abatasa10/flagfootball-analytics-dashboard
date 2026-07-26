@@ -1697,6 +1697,9 @@ body {
   .analysis-resume-grid {
     grid-template-columns: 1fr;
   }
+  .session-detail-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 
 #playbook-paste-zone:focus {
