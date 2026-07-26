@@ -714,3 +714,7 @@ function importPlayersFromSource() {
     return { error: err.message };
   }
 }
+
+function testAuthorize() {
+  UrlFetchApp.fetch("https://generativelanguage.googleapis.com");
+}
