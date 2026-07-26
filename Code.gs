@@ -106,6 +106,17 @@ function doPost(e) {
         payload: JSON.stringify(payload),
         muteHttpExceptions: true
       };
+
+      var response = UrlFetchApp.fetch(url, options);
+      var responseText = response.getContentText();
+      var responseJson = JSON.parse(responseText);
+      
+      if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts[0]) {
+        var aiText = responseJson.candidates[0].content.parts[0].text;
+        return jsonResponse({ analysis: aiText });
+      } else {
+        return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
+      }
     }
 
     // AI PLAYBOOK DIAGRAM ANALYSIS ROUTE
@@ -180,18 +191,6 @@ function doPost(e) {
         } catch(e) {
           return jsonResponse({ error: 'Gagal memparsing JSON hasil analisis AI: ' + aiText });
         }
-      } else {
-        return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
-      }
-    }
-      
-      var response = UrlFetchApp.fetch(url, options);
-      var responseText = response.getContentText();
-      var responseJson = JSON.parse(responseText);
-      
-      if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts[0]) {
-        var aiText = responseJson.candidates[0].content.parts[0].text;
-        return jsonResponse({ analysis: aiText });
       } else {
         return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
       }
