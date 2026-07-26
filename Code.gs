@@ -91,7 +91,7 @@ function doPost(e) {
         return jsonResponse({ error: 'Prompt analisis kosong.' });
       }
       
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + apiKey;
       var payload = {
         contents: [{
           parts: [{
@@ -153,7 +153,7 @@ function doPost(e) {
                        "Return the result ONLY as a JSON array of objects, with no markdown code blocks, no extra text, exactly in this format: " +
                        "[{\"receiver\": \"X\", \"route_name\": \"Slant\"}, {\"receiver\": \"Y\", \"route_name\": \"Flat\"}, ...]";
                        
-      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + apiKey;
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=' + apiKey;
       var payload = {
         contents: [{
           parts: [
