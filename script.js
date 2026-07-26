@@ -109,6 +109,14 @@ const assignmentsCountLabel = document.getElementById('assignments-count-label')
 const assignmentRowsContainer = playbookAssignmentsModal.querySelector('#assignment-rows-container');
 const addAssignmentRowBtn = playbookAssignmentsModal.querySelector('#add-assignment-row-btn');
 
+// Session Detail Modal Elements
+const sessionDetailModal = document.getElementById('session-detail-modal');
+const closeSessionDetailModalBtn = document.getElementById('close-session-detail-modal-btn');
+const closeSessionDetailBtn = document.getElementById('close-session-detail-btn');
+const btnSessionAiAnalyze = document.getElementById('btn-session-ai-analyze');
+const sessionAiReportPlaceholder = document.getElementById('session-ai-report-placeholder');
+const sessionAiReportContent = document.getElementById('session-ai-report-content');
+
 // Session DOM Elements
 const sessionListView = document.getElementById('session-list-view');
 const sessionFormView = document.getElementById('session-form-view');
@@ -522,8 +530,9 @@ async function loadSessions() {
 
     sessionTableBody.innerHTML = cache.sessions.map((s, i) => {
       const id = s.session_id || '';
-      const statusClass = s.status === 'Done' ? 'badge badge-accent' : 'badge';
-      const statusLabel = s.status === 'Done' ? 'Selesai' : 'Sedang Berjalan';
+      const isDone = s.status === 'Done' || s.status === 'Selesai';
+      const statusClass = isDone ? 'badge badge-accent' : 'badge';
+      const statusLabel = isDone ? 'Selesai' : 'Sedang Berjalan';
       
       const score = (s.our_score !== undefined && s.opponent_score !== undefined) ? `${s.our_score}-${s.opponent_score}` : '-';
       
@@ -547,6 +556,7 @@ async function loadSessions() {
           <td><span class="badge ${s.result === 'Win' ? 'badge-accent' : ''}" style="${s.result === 'Loss' ? 'background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2);' : ''}">${s.result || '-'}</span></td>
           <td><span class="${statusClass}">${statusLabel}</span></td>
           <td>
+            <button class="action-btn edit" style="background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.25);" onclick="viewSessionDetail('${id}')">Detail & AI</button>
             <button class="action-btn edit" onclick="startEditSession('${id}')">Edit</button>
             <button class="action-btn delete" onclick="deleteRecord('${SHEET_SESSION}', '${id}')">Hapus</button>
           </td>
@@ -1035,6 +1045,225 @@ function closeAssignmentsModal() {
 }
 closeAssignmentsModalBtn.addEventListener('click', closeAssignmentsModal);
 saveAssignmentsModalBtn.addEventListener('click', closeAssignmentsModal);
+
+// Session Detail Modal Actions
+let activeDetailSessionId = null;
+
+async function viewSessionDetail(id) {
+  const session = cache.sessions.find(s => s.session_id === id);
+  if (!session) return;
+
+  activeDetailSessionId = id;
+  
+  // Fill text details
+  document.getElementById('session-detail-title').textContent = `Detail Sesi: ${session.opponent || '-'} (${id})`;
+  document.getElementById('sd-type').textContent = session.session_type || '-';
+  document.getElementById('sd-opponent').textContent = session.opponent || '-';
+  
+  let formattedDate = session.date || '-';
+  if (formattedDate && formattedDate !== '-') {
+    try {
+      const d = new Date(formattedDate);
+      if (!isNaN(d.getTime())) {
+        formattedDate = d.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      }
+    } catch(e) {}
+  }
+  document.getElementById('sd-date').textContent = formattedDate;
+  
+  const score = (session.our_score !== undefined && session.opponent_score !== undefined) ? `${session.our_score}-${session.opponent_score}` : '-';
+  document.getElementById('sd-score').textContent = score;
+
+  // Filter play records for this session
+  const plays = cache.sessionPlays.filter(p => p.session_id === id);
+  document.getElementById('sd-total-plays').textContent = plays.length;
+
+  // Calculate statistics
+  let completions = 0;
+  let attempts = 0;
+  let yards = 0;
+  let tds = 0;
+  let ints = 0;
+
+  plays.forEach(p => {
+    if (p.category_play === 'Pass' || p.category_play === 'pass') {
+      attempts++;
+      if (p.result === 'Complete' || p.result === 'complete' || p.result === 'Touchdown' || p.result === 'touchdown') {
+        completions++;
+      }
+    }
+    if (p.result === 'Interception' || p.result === 'interception') {
+      ints++;
+    }
+    yards += parseInt(p.yards || 0, 10);
+    if (p.touchdown === 'Yes' || p.touchdown === 'yes' || p.touchdown === 1 || p.touchdown === '1') {
+      tds++;
+    }
+  });
+
+  const compPct = attempts > 0 ? Math.round((completions / attempts) * 100) : 0;
+  const avgYards = plays.length > 0 ? (yards / plays.length).toFixed(1) : '0';
+
+  document.getElementById('sd-comp-pct').textContent = `${compPct}% (${completions}/${attempts})`;
+  document.getElementById('sd-total-yards').textContent = yards;
+  document.getElementById('sd-avg-yards').textContent = avgYards;
+  document.getElementById('sd-tds').textContent = tds;
+  document.getElementById('sd-ints').textContent = ints;
+
+  // Populate Plays List Table
+  const playsBody = document.getElementById('session-detail-plays-body');
+  if (plays.length === 0) {
+    playsBody.innerHTML = `<tr><td colspan="6" class="table-empty">Belum ada play dicatat untuk sesi ini.</td></tr>`;
+  } else {
+    playsBody.innerHTML = plays.map((p, idx) => {
+      // Find playbook name
+      const playbookPlay = cache.playbook.find(pl => pl.play_id === p.play_id);
+      const playName = playbookPlay ? playbookPlay.play_name : (p.play_id || '-');
+      
+      // Find route name or abbreviation
+      const routeObj = cache.routes.find(r => r.route_id === p.route_id || r.abbreviation === p.route_id);
+      const routeName = routeObj ? `${routeObj.route_name} (${routeObj.abbreviation})` : (p.route_id || '-');
+
+      // Find target name
+      const targetObj = cache.players.find(pl => pl.player_id === p.target_player_id);
+      const targetName = targetObj ? targetObj.name : (p.target_player_id || '-');
+
+      const isTd = p.touchdown === 'Yes' || p.touchdown === 'yes' || p.touchdown === 1 || p.touchdown === '1';
+
+      return `
+        <tr>
+          <td>${idx + 1}</td>
+          <td><strong>${playName}</strong></td>
+          <td>${routeName}</td>
+          <td>${targetName}</td>
+          <td>
+            <span class="badge ${p.result === 'Complete' || p.result === 'Complete' || p.result === 'Run' ? 'badge-accent' : ''}" 
+                  style="${p.result === 'Interception' ? 'background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid rgba(239,68,68,0.2);' : ''} ${isTd ? 'background: #d97706; color: #fff; font-weight: bold;' : ''}">
+              ${isTd ? 'Touchdown' : (p.result || '-')}
+            </span>
+          </td>
+          <td>${p.yards || 0} yds</td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  // Reset AI analysis panel
+  sessionAiReportPlaceholder.style.display = 'flex';
+  sessionAiReportContent.style.display = 'none';
+  sessionAiReportContent.textContent = '';
+  btnSessionAiAnalyze.disabled = false;
+  btnSessionAiAnalyze.textContent = '🤖 Analisis Evaluasi (AI)';
+
+  // Show Modal
+  sessionDetailModal.style.display = 'flex';
+}
+
+function closeSessionDetailModal() {
+  sessionDetailModal.style.display = 'none';
+}
+
+if (closeSessionDetailModalBtn) {
+  closeSessionDetailModalBtn.addEventListener('click', closeSessionDetailModal);
+}
+if (closeSessionDetailBtn) {
+  closeSessionDetailBtn.addEventListener('click', closeSessionDetailModal);
+}
+
+// AI Session analysis button handler
+if (btnSessionAiAnalyze) {
+  btnSessionAiAnalyze.addEventListener('click', async () => {
+    if (!activeDetailSessionId) return;
+
+    btnSessionAiAnalyze.disabled = true;
+    btnSessionAiAnalyze.textContent = 'Menganalisis…';
+    sessionAiReportPlaceholder.style.display = 'none';
+    sessionAiReportContent.style.display = 'block';
+    sessionAiReportContent.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; height: 200px; color: var(--text-muted);">
+      <div style="border: 2px solid rgba(255,255,255,0.1); border-top: 2px solid var(--accent-color); border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin-right: 10px;"></div>
+      <span>Menghubungi Coach AI untuk mengevaluasi data sesi…</span>
+    </div>`;
+
+    try {
+      const session = cache.sessions.find(s => s.session_id === activeDetailSessionId);
+      const rawPlays = cache.sessionPlays.filter(p => p.session_id === activeDetailSessionId);
+
+      // Format play records for prompt
+      const playsMapped = rawPlays.map(p => {
+        const playbookPlay = cache.playbook.find(pl => pl.play_id === p.play_id);
+        const playName = playbookPlay ? playbookPlay.play_name : (p.play_id || '-');
+        
+        const routeObj = cache.routes.find(r => r.route_id === p.route_id || r.abbreviation === p.route_id);
+        const routeName = routeObj ? routeObj.route_name : (p.route_id || '-');
+
+        const targetObj = cache.players.find(pl => pl.player_id === p.target_player_id);
+        const targetName = targetObj ? targetObj.name : (p.target_player_id || '-');
+
+        const qbObj = cache.players.find(pl => pl.player_id === p.qb_player_id);
+        const qbName = qbObj ? qbObj.name : (p.qb_player_id || '-');
+
+        return {
+          playbook: playName,
+          route: routeName,
+          qb: qbName,
+          target: targetName,
+          result: p.result || '-',
+          yards: p.yards || 0,
+          td: (p.touchdown === 'Yes' || p.touchdown === 'yes' || p.touchdown === 1 || p.touchdown === '1') ? 'Yes' : 'No'
+        };
+      });
+
+      const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'analyze_session',
+          session: {
+            opponent: session.opponent || '-',
+            type: session.session_type || '-',
+            date: session.date || '-',
+            our_score: session.our_score || 0,
+            opponent_score: session.opponent_score || 0
+          },
+          plays: playsMapped
+        })
+      });
+
+      const text = await res.text();
+      let result;
+      try {
+        result = JSON.parse(text);
+      } catch(jsonErr) {
+        throw new Error('Respon server tidak valid: ' + text.substring(0, 100));
+      }
+
+      if (result.error) throw new Error(result.error);
+
+      // Render formatted response
+      let htmlContent = parseMarkdownToHTML(result.analysis || 'Tidak ada analisis yang diterima.');
+      sessionAiReportContent.innerHTML = `<div style="font-family: inherit; line-height: 1.6;">${htmlContent}</div>`;
+    } catch (err) {
+      sessionAiReportContent.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">
+        <div style="font-size: 1.8rem; margin-bottom: 8px;">⚠️</div>
+        <div>Gagal melakukan analisis: <strong>${err.message}</strong></div>
+        <button class="action-btn edit" style="margin-top: 12px;" onclick="document.getElementById('btn-session-ai-analyze').click()">Coba Lagi</button>
+      </div>`;
+    } finally {
+      btnSessionAiAnalyze.disabled = false;
+      btnSessionAiAnalyze.textContent = '🤖 Re-Analisis (AI)';
+    }
+  });
+}
+
+// Close when clicking outside modal
+window.addEventListener('click', (e) => {
+  if (e.target === sessionDetailModal) {
+    sessionDetailModal.style.display = 'none';
+  }
+});
+
+// Expose to window scope for onclick actions
+window.viewSessionDetail = viewSessionDetail;
 
 // Playbook Diagram image file upload Base64 reader
 // Playbook Diagram image file handler
