@@ -27,11 +27,12 @@ function doGet(e) {
       var sourceSs = SpreadsheetApp.openById('1FwV_WuB-aDZb_EXXrR0CaDWwsG3mihonu5k4P6R1mdU');
       var sheets = sourceSs.getSheets();
       var info = sheets.map(function(s) {
+        var rangeVal = s.getLastRow() > 0 ? s.getRange(1, 1, Math.min(5, s.getLastRow()), Math.min(10, s.getLastColumn())).getValues() : [];
         return {
           name: s.getName(),
           rows: s.getLastRow(),
           cols: s.getLastColumn(),
-          headers: s.getLastRow() > 0 ? s.getRange(1, 1, 1, Math.min(15, s.getLastColumn())).getValues()[0] : []
+          first5Rows: rangeVal
         };
       });
       return jsonResponse(info);
