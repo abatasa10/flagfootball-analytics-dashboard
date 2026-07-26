@@ -148,6 +148,36 @@ function doPost(e) {
       var base64String = Utilities.base64Encode(imageBlob.getBytes());
       var gMimeType = imageBlob.getContentType();
       
+      // Fetch active routes database for reference
+      var routesDbText = "";
+      try {
+        var routeSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('Master Route');
+        if (routeSheet) {
+          var rValues = routeSheet.getDataRange().getValues();
+          if (rValues.length > 1) {
+            var rHeaders = rValues[0];
+            var rRows = rValues.slice(1);
+            var rList = rRows.map(function(row) {
+              var rObj = {};
+              rHeaders.forEach(function(h, idx) {
+                rObj[h] = row[idx];
+              });
+              return rObj;
+            }).filter(function(r) { return String(r.status).toLowerCase().trim() === 'aktif'; });
+            
+            routesDbText = "\n\nOFFICIAL ROUTES REFERENCE DATABASE:\n" +
+                           "You MUST choose receiver routes ONLY from this list. Use the description and category to identify which route matches the drawing in the playbook diagram:\n";
+            rList.forEach(function(r) {
+              routesDbText += "- Route Name: \"" + r.route_name + "\" (Abbreviation: \"" + r.abbreviation + "\")\n" +
+                              "  Type: " + r.route_type + ", Category: " + r.category + "\n" +
+                              "  Tactical Drawing Description: " + r.description + "\n\n";
+            });
+          }
+        }
+      } catch(e) {
+        Logger.log("Gagal membaca Master Route: " + e.message);
+      }
+
       var promptText = "Analyze this flag football playbook diagram. " +
                        "Determine the following details for this play:\n" +
                        "1. Recommended Name of the play (play_name, try to detect if written in the image, e.g. 'Hook / S-Post' or 'Dragon Weak', but remove numbering prefix like '1 - ')\n" +
@@ -155,7 +185,10 @@ function doPost(e) {
                        "3. Offense Type (offense_type, must choose one of: 'Pass', 'Run', 'RPO', 'Trick Play')\n" +
                        "4. Play Category based on routes depth (play_category, must choose one of: 'Short', 'Intermediate', 'Deep', 'Screen')\n" +
                        "5. Brief tactical description explaining the route combination (description)\n" +
-                       "6. Rute larinya (routes, array of objects containing 'receiver' (e.g. 'X', 'Y', 'Z', 'C', 'QB') and 'route_name' (choose from standard routes like: Slant, Flat, Hook, Curl, Out, In, Post, Go, Streak, Corner, Wheel, Fade, Screen))\n\n" +
+                       "6. Running routes for each receiver found (routes, array of objects containing 'receiver' (e.g. 'X', 'Y', 'Z', 'C', 'QB') and 'route_name').\n\n" +
+                       "CRITICAL RULE for routes:\n" +
+                       "For each receiver, match their drawn route line with the reference database below. In the JSON output 'route_name', you MUST return the exact abbreviation (e.g. 'SL', 'GO', 'H', etc.) of the matched route from the database. Do not invent new names.\n" +
+                       routesDbText + "\n\n" +
                        "Return the result ONLY as a JSON object, with no markdown code blocks, no extra text, exactly in this format:\n" +
                        "{\n" +
                        "  \"play_name\": \"...\",\n" +
