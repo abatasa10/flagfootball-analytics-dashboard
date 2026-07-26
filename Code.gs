@@ -517,7 +517,7 @@ function checkAndCreateSheet(sheetName) {
     'Master Player': ['player_id', 'name', 'nick_name', 'jersey_number', 'sport', 'position', 'secondary_position', 'height (cm)', 'weight (kg)', 'birth_date', 'team'],
     'Master Team': ['team_id', 'team_name', 'abbreviation', 'description', 'primary_color'],
     'Master Position': ['position_id', 'position_name', 'abbreviation', 'category'],
-    'Master Route': ['route_id', 'route_name', 'abbreviation', 'category', 'route_type', 'description', 'status'],
+    'Master Route': ['route_id', 'route_name', 'abbreviation', 'category', 'route_type', 'description', 'status', 'image'],
     'Playbook': ['play_id', 'play_name', 'formation', 'offense_type', 'play_category', 'description', 'image', 'active'],
     'Play Assignment': ['assignment_id', 'play_id', 'receiver', 'position', 'route_id'],
     'Session': ['session_id', 'session_type', 'opponent', 'date', 'our_score', 'opponent_score', 'result', 'status'],

@@ -794,6 +794,21 @@
                     <input type="text" name="description" placeholder="Lari lurus lalu belok 45 derajat ke dalam">
                   </label>
                   <label>
+                    Upload / Paste Diagram Rute (Gambar)
+                    <input type="file" id="route-image-file" accept="image/*" style="padding: 6px; width: 100%;">
+                    <input type="hidden" name="image" id="route-image-url">
+                    <div id="route-paste-zone" tabindex="0" style="border: 2px dashed var(--card-border); border-radius: 8px; padding: 16px; text-align: center; cursor: pointer; margin-top: 8px; background: rgba(255,255,255,0.02); outline: none; transition: all 0.2s;">
+                      <div style="font-size: 1.2rem; margin-bottom: 4px;">📋</div>
+                      <div style="font-size: 0.75rem; font-weight: 600; color: var(--text-muted);">Klik di sini lalu tekan Ctrl+V / Cmd+V</div>
+                      <div style="font-size: 0.65rem; color: var(--text-muted); margin-top: 2px;">untuk menempelkan gambar rute dari clipboard</div>
+                    </div>
+                  </label>
+                  <div id="route-image-preview-container" style="display: none; margin-top: 8px;">
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px;">Preview File Baru:</div>
+                    <img id="route-image-preview" src="" style="max-width: 100%; max-height: 120px; border-radius: 6px; border: 1px solid var(--card-border);">
+                  </div>
+
+                  <label>
                     Status
                     <select name="status" required>
                       <option value="Aktif">Aktif</option>
@@ -822,6 +837,7 @@
                       <tr>
                         <th>#</th>
                         <th>ID Rute</th>
+                        <th>Diagram</th>
                         <th>Nama Rute</th>
                         <th>Singkatan</th>
                         <th>Kategori</th>
@@ -832,7 +848,7 @@
                       </tr>
                     </thead>
                     <tbody id="route-table-body">
-                      <tr><td colspan="9" class="table-empty">Memuat data rute…</td></tr>
+                      <tr><td colspan="10" class="table-empty">Memuat data rute…</td></tr>
                     </tbody>
                   </table>
                 </div>

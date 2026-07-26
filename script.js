@@ -54,6 +54,10 @@ let uploadedImageBase64 = null;
 let uploadedImageName = '';
 let uploadedImageType = '';
 
+let uploadedRouteImageBase64 = null;
+let uploadedRouteImageName = '';
+let uploadedRouteImageType = '';
+
 // DOM Elements
 const viewTitle = document.getElementById('view-title');
 const globalRefreshBtn = document.getElementById('global-refresh-btn');
@@ -78,6 +82,11 @@ const routeForm = document.getElementById('route-form');
 const routeSubmitBtn = document.getElementById('route-submit-btn');
 const routeCancelBtn = document.getElementById('route-cancel-btn');
 const routeStatus = document.getElementById('route-form-status');
+const routeImageFile = document.getElementById('route-image-file');
+const routeImageUrlInput = document.getElementById('route-image-url');
+const routePasteZone = document.getElementById('route-paste-zone');
+const routeImagePreviewContainer = document.getElementById('route-image-preview-container');
+const routeImagePreview = document.getElementById('route-image-preview');
 
 const playbookForm = document.getElementById('playbook-form');
 const playbookSubmitBtn = document.getElementById('playbook-submit-btn');
@@ -321,7 +330,7 @@ async function loadPositions() {
 
 // Load & Render Routes
 async function loadRoutes() {
-  routeTableBody.innerHTML = `<tr><td colspan="9" class="table-empty">Memuat data rute…</td></tr>`;
+  routeTableBody.innerHTML = `<tr><td colspan="10" class="table-empty">Memuat data rute…</td></tr>`;
   try {
     const data = await fetchSheetData(SHEET_ROUTES);
     cache.routes = Array.isArray(data) ? data : [];
@@ -330,16 +339,21 @@ async function loadRoutes() {
     if (statRoutes) statRoutes.textContent = cache.routes.length;
 
     if (!cache.routes.length) {
-      routeTableBody.innerHTML = `<tr><td colspan="9" class="table-empty">Belum ada rute terdaftar.</td></tr>`;
+      routeTableBody.innerHTML = `<tr><td colspan="10" class="table-empty">Belum ada rute terdaftar.</td></tr>`;
       return;
     }
 
     routeTableBody.innerHTML = cache.routes.map((rt, i) => {
       const id = rt.route_id || '';
+      const imgHtml = rt.image ? `
+        <img src="${rt.image}" style="max-height: 40px; border-radius: 4px; cursor: pointer; border: 1px solid var(--card-border);" onclick="window.open('${rt.image}', '_blank')">
+      ` : '<span style="color: var(--text-muted); font-size: 0.8rem;">-</span>';
+
       return `
           <tr>
             <td>${i + 1}</td>
             <td><strong>${id || '-'}</strong></td>
+            <td>${imgHtml}</td>
             <td>${rt.route_name || '-'}</td>
             <td><span class="badge badge-accent">${rt.abbreviation || '-'}</span></td>
             <td>${rt.category || '-'}</td>
@@ -355,7 +369,7 @@ async function loadRoutes() {
     }).join('');
 
   } catch (err) {
-    routeTableBody.innerHTML = `<tr><td colspan="9" class="table-empty" style="color: var(--danger);">Gagal: ${err.message}</td></tr>`;
+    routeTableBody.innerHTML = `<tr><td colspan="10" class="table-empty" style="color: var(--danger);">Gagal: ${err.message}</td></tr>`;
     throw err;
   }
 }
@@ -705,6 +719,20 @@ function startEditRoute(id) {
   routeForm.description.value = rt.description || '';
   routeForm.status.value = rt.status || 'Aktif';
 
+  // Load existing image if any
+  uploadedRouteImageBase64 = null;
+  uploadedRouteImageName = '';
+  uploadedRouteImageType = '';
+  routeImageFile.value = '';
+  if (rt.image) {
+    routeImageUrlInput.value = rt.image;
+    routeImagePreview.src = rt.image;
+    routeImagePreviewContainer.style.display = 'block';
+  } else {
+    routeImageUrlInput.value = '';
+    routeImagePreviewContainer.style.display = 'none';
+  }
+
   routeSubmitBtn.textContent = 'Update Rute';
   routeCancelBtn.style.display = 'inline-block';
   document.querySelector('#view-route .glass-card__title').textContent = `Edit Rute (${id})`;
@@ -713,6 +741,15 @@ function startEditRoute(id) {
 function cancelEditRoute() {
   editingRouteId = null;
   routeForm.reset();
+  
+  // Clear image states
+  uploadedRouteImageBase64 = null;
+  uploadedRouteImageName = '';
+  uploadedRouteImageType = '';
+  routeImageUrlInput.value = '';
+  routeImageFile.value = '';
+  routeImagePreviewContainer.style.display = 'none';
+  
   routeSubmitBtn.textContent = 'Simpan Rute';
   routeCancelBtn.style.display = 'none';
   document.querySelector('#view-route .glass-card__title').textContent = 'Tambah Rute Baru';
@@ -1025,20 +1062,59 @@ playbookImageFile.addEventListener('change', (e) => {
   handlePlaybookImage(e.target.files[0]);
 });
 
-// Paste event handler for clipboard images
+// Route Diagram image file handler
+function handleRouteImage(file) {
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function (evt) {
+      uploadedRouteImageBase64 = evt.target.result.split(',')[1];
+      uploadedRouteImageName = file.name || 'clipboard_pasted_route.png';
+      uploadedRouteImageType = file.type || 'image/png';
+
+      routeImagePreview.src = evt.target.result;
+      routeImagePreviewContainer.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  } else {
+    uploadedRouteImageBase64 = null;
+    uploadedRouteImageName = '';
+    uploadedRouteImageType = '';
+    routeImagePreviewContainer.style.display = 'none';
+  }
+}
+
+if (routeImageFile) {
+  routeImageFile.addEventListener('change', (e) => {
+    handleRouteImage(e.target.files[0]);
+  });
+}
+
+// Paste event handler for clipboard images (Global)
 document.addEventListener('paste', (e) => {
   console.log('Paste event detected globally');
   const activeBtn = document.querySelector('.sidebar__nav-item.is-active');
   if (!activeBtn) return;
-  if (activeBtn.getAttribute('data-view') !== 'playbook') return;
+  const view = activeBtn.getAttribute('data-view');
   
-  const items = (e.clipboardData || e.originalEvent.clipboardData).items;
-  for (let i = 0; i < items.length; i++) {
-    if (items[i].type.indexOf('image') !== -1) {
-      const file = items[i].getAsFile();
-      console.log('Global paste matched image:', file.name, file.size);
-      handlePlaybookImage(file);
-      break;
+  if (view === 'playbook') {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        console.log('Global playbook paste matched image:', file.name, file.size);
+        handlePlaybookImage(file);
+        break;
+      }
+    }
+  } else if (view === 'route') {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        console.log('Global route paste matched image:', file.name, file.size);
+        handleRouteImage(file);
+        break;
+      }
     }
   }
 });
@@ -1090,6 +1166,54 @@ if (playbookPasteZone) {
   // Clicking paste zone prompts focusing it
   playbookPasteZone.addEventListener('click', () => {
     playbookPasteZone.focus();
+  });
+}
+
+// Setup Route specific paste zone
+const routePasteZone = document.getElementById('route-paste-zone');
+if (routePasteZone) {
+  routePasteZone.addEventListener('paste', (e) => {
+    console.log('Paste event triggered on route specific paste zone!');
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const file = items[i].getAsFile();
+        console.log('Route paste zone matched image:', file.name, file.size);
+        handleRouteImage(file);
+        e.preventDefault();
+        break;
+      }
+    }
+  });
+
+  routePasteZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    routePasteZone.style.borderColor = 'var(--accent-color, #d97706)';
+    routePasteZone.style.background = 'rgba(217, 119, 6, 0.05)';
+  });
+
+  routePasteZone.addEventListener('dragleave', () => {
+    routePasteZone.style.borderColor = '';
+    routePasteZone.style.background = '';
+  });
+
+  routePasteZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    routePasteZone.style.borderColor = '';
+    routePasteZone.style.background = '';
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.indexOf('image') !== -1) {
+        console.log('Dropped image on route paste zone:', file.name, file.size);
+        handleRouteImage(file);
+      } else {
+        alert('File yang di-drop harus berupa gambar!');
+      }
+    }
+  });
+
+  routePasteZone.addEventListener('click', () => {
+    routePasteZone.focus();
   });
 }
 
@@ -1204,6 +1328,15 @@ routeForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(routeForm);
   const data = Object.fromEntries(formData.entries());
+
+  // Attach route image base64 if present
+  if (uploadedRouteImageBase64) {
+    data.image_file = {
+      base64: uploadedRouteImageBase64,
+      name: uploadedRouteImageName,
+      type: uploadedRouteImageType
+    };
+  }
 
   const action = editingRouteId ? 'update' : 'create';
   const id = editingRouteId;
