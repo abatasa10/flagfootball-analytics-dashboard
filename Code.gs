@@ -447,6 +447,72 @@ function importPlayersFromSource() {
       return { error: 'Source sheet "Form MB - Data Pemain" tidak ditemukan di spreadsheet sumber.' };
     }
     
+    // Load Seleksi Pemain sheet to retrieve Position, Height, Weight
+    var seleksiSheet = sourceSs.getSheetByName('Data Seleksi Pemain Tim Putra Depok 2026');
+    var seleksiLookup = {};
+    
+    // Helper to clean name (removes (C), (U18), stars, asterisks, emojis, dsb)
+    function cleanName(n) {
+      return String(n)
+        .replace(/\([Cc]\)/g, '')
+        .replace(/\(U\d+\)/g, '')
+        .replace(/[⭐★✨*]/g, '')
+        .trim();
+    }
+    
+    if (seleksiSheet) {
+      var selValues = seleksiSheet.getDataRange().getValues();
+      var selHeaderRowIdx = 0;
+      for (var r = 0; r < Math.min(5, selValues.length); r++) {
+        if (selValues[r].indexOf('Nama Lengkap') !== -1) {
+          selHeaderRowIdx = r;
+          break;
+        }
+      }
+      var selHeaders = selValues[selHeaderRowIdx];
+      var colFullNameSel = -1;
+      var colPosSel = -1;
+      var colHeightSel = -1;
+      var colWeightSel = -1;
+      
+      selHeaders.forEach(function(h, idx) {
+        var lower = String(h).toLowerCase();
+        if (colFullNameSel === -1 && lower.indexOf('nama lengkap') !== -1) colFullNameSel = idx;
+        if (colPosSel === -1 && lower.indexOf('posisi') !== -1) colPosSel = idx;
+        if (colHeightSel === -1 && lower.indexOf('tinggi') !== -1) colHeightSel = idx;
+        if (colWeightSel === -1 && lower.indexOf('berat') !== -1) colWeightSel = idx;
+      });
+      
+      if (colFullNameSel !== -1) {
+        for (var i = selHeaderRowIdx + 1; i < selValues.length; i++) {
+          var row = selValues[i];
+          var rawName = String(row[colFullNameSel] || '').trim();
+          if (!rawName) continue;
+          
+          var cleaned = cleanName(rawName).toLowerCase();
+          
+          // Parse heights like "160 cm" -> 160
+          var heightVal = '';
+          if (colHeightSel !== -1 && row[colHeightSel]) {
+            var m = String(row[colHeightSel]).match(/\d+/);
+            if (m) heightVal = parseInt(m[0], 10);
+          }
+          
+          var weightVal = '';
+          if (colWeightSel !== -1 && row[colWeightSel]) {
+            var m = String(row[colWeightSel]).match(/\d+/);
+            if (m) weightVal = parseInt(m[0], 10);
+          }
+          
+          seleksiLookup[cleaned] = {
+            position: colPosSel !== -1 ? String(row[colPosSel] || '').trim() : '',
+            height: heightVal,
+            weight: weightVal
+          };
+        }
+      }
+    }
+    
     var destSs = SpreadsheetApp.getActiveSpreadsheet();
     var destSheet = destSs.getSheetByName('Master Player');
     if (!destSheet) {
@@ -455,19 +521,28 @@ function importPlayersFromSource() {
     
     // Read source data
     var sourceValues = sourceSheet.getDataRange().getValues();
-    var sourceHeaders = sourceValues[0];
+    
+    // Find the actual header row
+    var headerRowIndex = 0;
+    for (var r = 0; r < Math.min(5, sourceValues.length); r++) {
+      if (sourceValues[r].indexOf('Nama Lengkap') !== -1) {
+        headerRowIndex = r;
+        break;
+      }
+    }
+    
+    var sourceHeaders = sourceValues[headerRowIndex];
     
     // Find column indexes of source
-    var colFullName = sourceHeaders.indexOf('Nama Lengkap');
-    var colJersey = sourceHeaders.indexOf('No Jersey');
-    var colNameOnJersey = sourceHeaders.indexOf('Nama di Jersey');
-    var colBirthDate = sourceHeaders.indexOf('Tanggal Lahir');
-    var colHeight = sourceHeaders.indexOf('Tinggi Badan');
-    var colWeight = sourceHeaders.indexOf('Berat Badan');
-    var colPrimaryPos = sourceHeaders.indexOf('Posisi Utama');
-    var colSecondaryPos = sourceHeaders.indexOf('Posisi Sekunder');
+    var colFullName = -1;
+    var colJersey = -1;
+    var colNameOnJersey = -1;
+    var colBirthDate = -1;
+    var colHeight = -1;
+    var colWeight = -1;
+    var colPrimaryPos = -1;
+    var colSecondaryPos = -1;
     
-    // If some columns not found by exact string, let's search loosely
     sourceHeaders.forEach(function(h, idx) {
       var lower = String(h).toLowerCase();
       if (colFullName === -1 && lower.indexOf('nama lengkap') !== -1) colFullName = idx;
@@ -495,16 +570,7 @@ function importPlayersFromSource() {
     var addedCount = 0;
     var skippedCount = 0;
     
-    // Helper to clean name (removes (C), (U18), stars, emojis, dsb)
-    function cleanName(n) {
-      return String(n)
-        .replace(/\([Cc]\)/g, '')
-        .replace(/\(U\d+\)/g, '')
-        .replace(/[⭐★✨]/g, '')
-        .trim();
-    }
-    
-    for (var i = 1; i < sourceValues.length; i++) {
+    for (var i = headerRowIndex + 1; i < sourceValues.length; i++) {
       var row = sourceValues[i];
       var rawName = String(row[colFullName] || '').trim();
       if (!rawName) continue;
@@ -517,6 +583,30 @@ function importPlayersFromSource() {
         continue;
       }
       
+      // Look up in seleksi sheet lookup
+      var selInfo = seleksiLookup[nameKey] || {};
+      
+      // Map birthdate
+      var birthDateStr = '';
+      if (colBirthDate !== -1 && row[colBirthDate]) {
+        if (row[colBirthDate] instanceof Date) {
+          birthDateStr = row[colBirthDate].toISOString().substring(0, 10);
+        } else {
+          birthDateStr = String(row[colBirthDate]).trim();
+        }
+      }
+      
+      // Map positions
+      var pos = selInfo.position || (colPrimaryPos !== -1 ? String(row[colPrimaryPos] || '').trim() : '');
+      var secPos = colSecondaryPos !== -1 ? String(row[colSecondaryPos] || '').trim() : '';
+      
+      // Handle combined positions if they are like "WR/DB/PR" -> primary position "WR", secondary "DB/PR"
+      if (pos.indexOf('/') !== -1) {
+        var parts = pos.split('/');
+        pos = parts[0].trim();
+        secPos = parts.slice(1).join('/').trim();
+      }
+      
       // Map properties
       var newPlayer = {
         'player_id': generateNextId(destSheet, 'player_id', 'PL'),
@@ -524,11 +614,11 @@ function importPlayersFromSource() {
         'nick_name': colNameOnJersey !== -1 ? String(row[colNameOnJersey] || '').trim() : '',
         'jersey_number': colJersey !== -1 ? parseInt(row[colJersey], 10) || '' : '',
         'sport': 'Flag Football',
-        'position': colPrimaryPos !== -1 ? String(row[colPrimaryPos] || '').trim() : '',
-        'secondary_position': colSecondaryPos !== -1 ? String(row[colSecondaryPos] || '').trim() : '',
-        'height (cm)': colHeight !== -1 ? parseInt(row[colHeight], 10) || '' : '',
-        'weight (kg)': colWeight !== -1 ? parseInt(row[colWeight], 10) || '' : '',
-        'birth_date': colBirthDate !== -1 ? String(row[colBirthDate] || '').trim() : '',
+        'position': pos,
+        'secondary_position': secPos,
+        'height (cm)': selInfo.height || (colHeight !== -1 ? parseInt(row[colHeight], 10) || '' : ''),
+        'weight (kg)': selInfo.weight || (colWeight !== -1 ? parseInt(row[colWeight], 10) || '' : ''),
+        'birth_date': birthDateStr,
         'team': 'Depok'
       };
       
