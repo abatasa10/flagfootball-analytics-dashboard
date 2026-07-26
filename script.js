@@ -133,7 +133,7 @@ const sessionTypeInput = document.getElementById('session-type-input');
 const sessionOpponentInput = document.getElementById('session-opponent-input');
 const sessionDateInput = document.getElementById('session-date-input');
 const sessionOpponentScoreInput = document.getElementById('session-opponent-score-input');
-const sessionOurScorePreview = document.getElementById('session-our-score-preview');
+const sessionOurScoreInput = document.getElementById('session-our-score-input');
 const sessionDrivesContainer = document.getElementById('session-drives-container');
 
 // Select Inputs in Player Form
@@ -1698,7 +1698,7 @@ function startEditSession(id) {
   }
 
   sessionOpponentScoreInput.value = s.opponent_score || 0;
-  sessionOurScorePreview.textContent = s.our_score || 0;
+  sessionOurScoreInput.value = s.our_score || 0;
 
   // LED Scoreboard initialization
   const ourScoreLed = document.getElementById('scoreboard-our-score');
@@ -1749,7 +1749,7 @@ function cancelEditSession() {
   sessionOpponentInput.value = '';
   sessionDateInput.value = '';
   sessionOpponentScoreInput.value = '0';
-  sessionOurScorePreview.textContent = '0';
+  sessionOurScoreInput.value = '0';
   sessionDrivesContainer.innerHTML = '';
   driveCounter = 0;
 
@@ -2028,13 +2028,26 @@ function recalculateOurScore() {
       }
     }
   });
-  sessionOurScorePreview.textContent = score;
+  if (sessionOurScoreInput) {
+    sessionOurScoreInput.value = score;
+  }
 
   // LED Scoreboard update
   const ourScoreLed = document.getElementById('scoreboard-our-score');
   if (ourScoreLed) {
     ourScoreLed.textContent = String(score).padStart(2, '0');
   }
+}
+
+// Add input event listener to Skor Kita field to update LED scoreboard in real-time
+if (sessionOurScoreInput) {
+  sessionOurScoreInput.addEventListener('input', (e) => {
+    const scoreVal = parseInt(e.target.value, 10) || 0;
+    const ourScoreLed = document.getElementById('scoreboard-our-score');
+    if (ourScoreLed) {
+      ourScoreLed.textContent = String(scoreVal).padStart(2, '0');
+    }
+  });
 }
 
 async function saveSession(status) {
@@ -2045,7 +2058,7 @@ async function saveSession(status) {
     return;
   }
 
-  const ourScore = parseInt(sessionOurScorePreview.textContent, 10);
+  const ourScore = parseInt(sessionOurScoreInput.value, 10) || 0;
   const opponentScore = parseInt(sessionOpponentScoreInput.value, 10) || 0;
 
   let result = 'Draw';
