@@ -2159,7 +2159,7 @@ async function saveSession(status) {
 
     alert('Sesi berhasil disimpan!');
     cancelEditSession();
-    await loadSessions();
+    await loadAllData();
   } catch (err) {
     alert(`Gagal menyimpan sesi: ${err.message}`);
   } finally {
@@ -2416,7 +2416,8 @@ function calculateDashboardAnalytics(sessionIdFilter = 'ALL') {
   
   const passingPlays = filteredPlays.filter(p => {
     const res = String(p.result || '').trim().toLowerCase();
-    return res === 'complete' || res === 'incomplete' || res === 'interception';
+    const cat = String(p.category_play || '').trim().toLowerCase();
+    return cat !== 'run' && (res === 'complete' || res === 'incomplete' || res === 'interception');
   });
   const totalPasses = passingPlays.length;
   
@@ -3018,18 +3019,24 @@ function initPlayerAnalysis() {
       `;
       
       try {
-        // Collect stats context
-        const isQB = String(player.position || '').toLowerCase().includes('qb') || 
-                     String(player.secondary_position || '').toLowerCase().includes('qb');
-                     
-        let statsPrompt = '';
-        if (isQB) {
-          const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(selectedId).trim());
+        const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(selectedId).trim());
+        const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(selectedId).trim());
+        const hasQB = qbPlays.length > 0;
+        const hasRC = rcPlays.length > 0;
+
+        let statsPrompt = `Nama Pemain: ${player.name}\nPosisi: ${player.position || 'Pemain'} ${player.secondary_position ? '(Secondary: ' + player.secondary_position + ')' : ''}\n\n`;
+        
+        if (hasQB) {
           const passAtt = qbPlays.filter(p => {
             const res = String(p.result || '').toLowerCase();
-            return res === 'complete' || res === 'incomplete' || res === 'interception';
+            const category = String(p.category_play || '').toLowerCase();
+            return category !== 'run' && (res === 'complete' || res === 'incomplete' || res === 'interception');
           }).length;
-          const completions = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+          const completions = qbPlays.filter(p => {
+            const res = String(p.result || '').toLowerCase();
+            const category = String(p.category_play || '').toLowerCase();
+            return category !== 'run' && res === 'complete';
+          }).length;
           const compPct = passAtt > 0 ? Math.round((completions / passAtt) * 100) : 0;
           let yards = 0;
           qbPlays.forEach(p => {
@@ -3040,17 +3047,16 @@ function initPlayerAnalysis() {
           const tds = qbPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
           const ints = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'interception').length;
           
-          statsPrompt = `
-          Peran: Quarterback (QB)
+          statsPrompt += `--- STATISTIK QB (PASSING) ---
           Pass Attempts (Total Operan): ${passAtt}
           Completions (Operan Sukses): ${completions}
           Completion Rate: ${compPct}%
           Passing Yards: ${yards} yards
           Touchdowns Thrown: ${tds}
-          Interceptions Thrown: ${ints}
-          `;
-        } else {
-          const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(selectedId).trim());
+          Interceptions Thrown: ${ints}\n\n`;
+        }
+        
+        if (hasRC || (!hasQB && !hasRC)) {
           const targets = rcPlays.length;
           const catches = rcPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
           const catchPct = targets > 0 ? Math.round((catches / targets) * 100) : 0;
@@ -3063,15 +3069,13 @@ function initPlayerAnalysis() {
           const yac = Math.round(yards * 0.6);
           const tds = rcPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
           
-          statsPrompt = `
-          Peran: Receiver (WR/RB/TE)
+          statsPrompt += `--- STATISTIK RECEIVER (CATCHING) ---
           Targets (Dilempar): ${targets}
           Catches (Diterima): ${catches}
           Catch %: ${catchPct}%
           Receiving Yards: ${yards} yards
           Yards After Catch (YAC): ${yac} yards
-          Touchdowns Caught: ${tds}
-          `;
+          Touchdowns Caught: ${tds}\n`;
         }
         
         // Serialized recent plays (up to 8)
@@ -3188,36 +3192,57 @@ function renderPlayerAnalysis(playerId) {
   document.getElementById('analysis-player-year').textContent = experience;
   
   // 2. Perform stats aggregation
-  const isQB = String(player.position || '').toLowerCase().includes('qb') || 
-               String(player.secondary_position || '').toLowerCase().includes('qb');
+  const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(playerId).trim());
+  const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(playerId).trim());
+  
+  const hasQBStats = qbPlays.length > 0;
+  const hasRCStats = rcPlays.length > 0;
+  
+  let showQB = hasQBStats;
+  let showRC = hasRCStats;
+  
+  // Default to position if no stats exist
+  if (!hasQBStats && !hasRCStats) {
+    const isQB = String(player.position || '').toLowerCase().includes('qb') || 
+                 String(player.secondary_position || '').toLowerCase().includes('qb');
+    if (isQB) {
+      showQB = true;
+    } else {
+      showRC = true;
+    }
+  }
                
   const overviewContainer = document.getElementById('analysis-overview-container');
   const strengthsList = document.getElementById('analysis-strengths-list');
   const weaknessesList = document.getElementById('analysis-weaknesses-list');
   
-  if (isQB) {
-    // QB Stats
-    const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(playerId).trim());
+  let overviewHtml = '';
+  
+  if (showQB) {
     const passAtt = qbPlays.filter(p => {
       const res = String(p.result || '').toLowerCase();
-      return res === 'complete' || res === 'incomplete' || res === 'interception';
+      const category = String(p.category_play || '').toLowerCase();
+      return category !== 'run' && (res === 'complete' || res === 'incomplete' || res === 'interception');
     }).length;
-    
-    const completions = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+    const completions = qbPlays.filter(p => {
+      const res = String(p.result || '').toLowerCase();
+      const category = String(p.category_play || '').toLowerCase();
+      return category !== 'run' && res === 'complete';
+    }).length;
     const compPct = passAtt > 0 ? Math.round((completions / passAtt) * 100) : 0;
-    
     let yards = 0;
     qbPlays.forEach(p => {
       if (String(p.result || '').toLowerCase() === 'complete') {
         yards += parseInt(p.yards, 10) || 0;
       }
     });
-    
     const tds = qbPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
     const ints = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'interception').length;
-    
-    // Overview HTML
-    overviewContainer.innerHTML = `
+
+    overviewHtml += `
+      <div style="grid-column: 1 / -1; font-size: 0.8rem; font-weight: bold; color: var(--accent); border-bottom: 1px solid var(--card-border); padding-bottom: 4px; margin-bottom: 4px; font-family: 'Oswald', sans-serif; text-transform: uppercase; text-align: left;">
+        Quarterback (Passing)
+      </div>
       <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
         <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">PASS ATT</div>
         <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${passAtt}</div>
@@ -3240,11 +3265,74 @@ function renderPlayerAnalysis(playerId) {
       </div>
       <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
         <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">INT</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${ints}</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--danger); font-family: 'Oswald', sans-serif;">${ints}</div>
       </div>
     `;
+  }
+  
+  if (showRC) {
+    const targets = rcPlays.length;
+    const catches = rcPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
+    const catchPct = targets > 0 ? Math.round((catches / targets) * 100) : 0;
+    let yards = 0;
+    rcPlays.forEach(p => {
+      if (String(p.result || '').toLowerCase() === 'complete') {
+        yards += parseInt(p.yards, 10) || 0;
+      }
+    });
+    const yac = Math.round(yards * 0.6);
+    const tds = rcPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
+
+    overviewHtml += `
+      <div style="grid-column: 1 / -1; font-size: 0.8rem; font-weight: bold; color: var(--success); border-bottom: 1px solid var(--card-border); padding-bottom: 4px; margin-bottom: 4px; font-family: 'Oswald', sans-serif; text-transform: uppercase; text-align: left; margin-top: ${showQB ? '16px' : '0'};">
+        Receiver / Target (Catching)
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TARGETS</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${targets}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCHES</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${catches}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCH %</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; font-family: 'Oswald', sans-serif;">${catchPct}%</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YARDS</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #10b981; font-family: 'Oswald', sans-serif;">${yards}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YAC</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${yac}</div>
+      </div>
+      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
+        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TD</div>
+        <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444; font-family: 'Oswald', sans-serif;">${tds}</div>
+      </div>
+    `;
+  }
+  
+  overviewContainer.innerHTML = overviewHtml;
+
+  // Render strengths and weaknesses based on primaryIsQB
+  const primaryIsQB = String(player.position || '').toLowerCase().includes('qb') && !hasRCStats;
+  
+  if (primaryIsQB) {
+    // QB Strengths & Weaknesses
+    const passAtt = qbPlays.filter(p => {
+      const res = String(p.result || '').toLowerCase();
+      const category = String(p.category_play || '').toLowerCase();
+      return category !== 'run' && (res === 'complete' || res === 'incomplete' || res === 'interception');
+    }).length;
+    const completions = qbPlays.filter(p => {
+      const res = String(p.result || '').toLowerCase();
+      const category = String(p.category_play || '').toLowerCase();
+      return category !== 'run' && res === 'complete';
+    }).length;
+    const ints = qbPlays.filter(p => String(p.result || '').toLowerCase() === 'interception').length;
     
-    // Strengths
     const shortRate = passAtt > 0 ? Math.round((qbPlays.filter(p => {
       const category = String(p.category_play || '').toLowerCase();
       const isShort = category === 'short' || category === 'run';
@@ -3284,7 +3372,6 @@ function renderPlayerAnalysis(playerId) {
       </div>
     `;
     
-    // Weaknesses
     const deepAttempts = qbPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long').length;
     const deepCompletions = qbPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long' && String(p.result || '').toLowerCase() === 'complete').length;
     const deepRate = deepAttempts > 0 ? Math.round((deepCompletions / deepAttempts) * 100) : 40;
@@ -3312,53 +3399,10 @@ function renderPlayerAnalysis(playerId) {
         <div class="resume-item__desc">Tingkat konversi down ketiga masih membutuhkan variasi opsi taktik.</div>
       </div>
     `;
-    
   } else {
-    // Receiver Stats (WR, RB, TE, C)
-    const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(playerId).trim());
+    // WR Strengths & Weaknesses
     const targets = rcPlays.length;
     const catches = rcPlays.filter(p => String(p.result || '').toLowerCase() === 'complete').length;
-    const catchPct = targets > 0 ? Math.round((catches / targets) * 100) : 0;
-    
-    let yards = 0;
-    rcPlays.forEach(p => {
-      if (String(p.result || '').toLowerCase() === 'complete') {
-        yards += parseInt(p.yards, 10) || 0;
-      }
-    });
-    
-    const yac = Math.round(yards * 0.6); // Simulated YAC
-    const tds = rcPlays.filter(p => String(p.touchdown || '').toLowerCase() === 'yes').length;
-    
-    // Overview HTML
-    overviewContainer.innerHTML = `
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TARGET</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${targets}</div>
-      </div>
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCH</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-primary); font-family: 'Oswald', sans-serif;">${catches}</div>
-      </div>
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">CATCH %</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: #3b82f6; font-family: 'Oswald', sans-serif;">${compPct = catchPct}%</div>
-      </div>
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YARDS</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: #10b981; font-family: 'Oswald', sans-serif;">${yards}</div>
-      </div>
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">YAC</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: var(--accent); font-family: 'Oswald', sans-serif;">${yac}</div>
-      </div>
-      <div style="text-align: center; background: rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.02); border-radius: 6px; padding: 10px;">
-        <div style="font-size: 0.6rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">TD</div>
-        <div style="font-size: 1.25rem; font-weight: 800; color: #ef4444; font-family: 'Oswald', sans-serif;">${tds}</div>
-      </div>
-    `;
-    
-    // Strengths
     const shortRate = targets > 0 ? Math.round((rcPlays.filter(p => {
       const category = String(p.category_play || '').toLowerCase();
       const isShort = category === 'short' || category === 'run';
@@ -3369,6 +3413,13 @@ function renderPlayerAnalysis(playerId) {
     }).length)) * 100) : 94;
     
     const dropRate = targets > 0 ? Math.round((rcPlays.filter(p => String(p.result || '').toLowerCase() === 'incomplete').length / targets) * 100) : 4.8;
+    let yards = 0;
+    rcPlays.forEach(p => {
+      if (String(p.result || '').toLowerCase() === 'complete') {
+        yards += parseInt(p.yards, 10) || 0;
+      }
+    });
+    const yac = Math.round(yards * 0.6);
     const avgYac = catches > 0 ? (yac / catches).toFixed(1) : '5.9';
     
     strengthsList.innerHTML = `
@@ -3395,7 +3446,6 @@ function renderPlayerAnalysis(playerId) {
       </div>
     `;
     
-    // Weaknesses
     const deepTargets = rcPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long').length;
     const deepCatches = rcPlays.filter(p => String(p.category_play || '').toLowerCase() === 'long' && String(p.result || '').toLowerCase() === 'complete').length;
     const deepRate = deepTargets > 0 ? Math.round((deepCatches / deepTargets) * 100) : 42;
