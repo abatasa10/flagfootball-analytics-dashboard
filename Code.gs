@@ -737,6 +737,7 @@ function testAuthorize() {
   var response = UrlFetchApp.fetch(url);
   Logger.log(response.getContentText());
   
-  // Force Drive App scope authorization request
-  DriveApp.getRootFolder();
+  // Force Drive App full write scope authorization request
+  var folder = DriveApp.createFolder("Temp Playmetrics Auth Folder DeleteMe");
+  folder.setTrashed(true); // move to trash immediately
 }
