@@ -1117,7 +1117,7 @@ async function viewSessionDetail(id) {
   } else {
     playsBody.innerHTML = plays.map((p, idx) => {
       // Find playbook name
-      const playbookPlay = cache.playbook.find(pl => pl.play_id === p.play_id);
+      const playbookPlay = cache.playbooks.find(pl => pl.play_id === p.play_id);
       const playName = playbookPlay ? playbookPlay.play_name : (p.play_id || '-');
       
       // Find route name or abbreviation
@@ -1190,7 +1190,7 @@ if (btnSessionAiAnalyze) {
 
       // Format play records for prompt
       const playsMapped = rawPlays.map(p => {
-        const playbookPlay = cache.playbook.find(pl => pl.play_id === p.play_id);
+        const playbookPlay = cache.playbooks.find(pl => pl.play_id === p.play_id);
         const playName = playbookPlay ? playbookPlay.play_name : (p.play_id || '-');
         
         const routeObj = cache.routes.find(r => r.route_id === p.route_id || r.abbreviation === p.route_id);
