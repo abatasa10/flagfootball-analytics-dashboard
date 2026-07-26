@@ -218,6 +218,35 @@ function doPost(e) {
       if (!sheet) {
         return jsonResponse({ error: 'Sheet "' + sheetName + '" tidak ditemukan' });
       }
+    } else {
+      // Auto-append missing headers to spreadsheet tab dynamically
+      var defaultHeaders = {
+        'Master Player': ['player_id', 'name', 'nick_name', 'jersey_number', 'sport', 'position', 'secondary_position', 'height (cm)', 'weight (kg)', 'birth_date', 'team'],
+        'Master Team': ['team_id', 'team_name', 'abbreviation', 'description', 'primary_color'],
+        'Master Position': ['position_id', 'position_name', 'abbreviation', 'category'],
+        'Master Route': ['route_id', 'route_name', 'abbreviation', 'category', 'route_type', 'description', 'status', 'image'],
+        'Playbook': ['play_id', 'play_name', 'formation', 'offense_type', 'play_category', 'description', 'image', 'active'],
+        'Play Assignment': ['assignment_id', 'play_id', 'receiver', 'position', 'route_id'],
+        'Session': ['session_id', 'session_type', 'opponent', 'date', 'our_score', 'opponent_score', 'result', 'status'],
+        'Session Play': ['play_record_id', 'session_id', 'drive_number', 'round_of_match', 'down', 'category_play', 'play_id', 'route_id', 'result', 'qb_player_id', 'target_player_id', 'yards', 'touchdown', 'reason_incomplete', 'next_status', 'pick_six']
+      };
+      var expectedHeaders = defaultHeaders[sheetName];
+      if (expectedHeaders) {
+        var lastCol = Math.max(1, sheet.getLastColumn());
+        var existingHeaders = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+        var headersMap = {};
+        existingHeaders.forEach(function(h) { 
+          if (h) headersMap[String(h).trim()] = true; 
+        });
+        var missingHeaders = [];
+        expectedHeaders.forEach(function(h) {
+          if (!headersMap[h]) missingHeaders.push(h);
+        });
+        if (missingHeaders.length > 0) {
+          var startCol = lastCol + 1;
+          sheet.getRange(1, startCol, 1, missingHeaders.length).setValues([missingHeaders]);
+        }
+      }
     }
 
     // Auto-generate ID configurations
