@@ -945,9 +945,14 @@
         <button type="button" class="modal-card__close-btn" id="close-assignments-modal-btn">&times;</button>
       </div>
       <div class="modal-card__body">
-        <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
-          Tentukan rute taktis untuk setiap receiver (X, Y, Z, C, QB) pada taktik ini.
-        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; flex-wrap: wrap;">
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin: 0; line-height: 1.4; flex: 1;">
+            Tentukan rute taktis untuk setiap receiver (X, Y, Z, C, QB) pada taktik ini.
+          </p>
+          <button type="button" id="btn-ai-analyze-diagram" class="btn-primary" style="padding: 6px 12px; font-size: 0.72rem; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+            🤖 Analisis Rute (AI)
+          </button>
+        </div>
         
         <!-- Image Preview Reference -->
         <div id="modal-playbook-image-preview-container" style="display: none; margin-bottom: 16px;">

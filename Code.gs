@@ -106,6 +106,84 @@ function doPost(e) {
         payload: JSON.stringify(payload),
         muteHttpExceptions: true
       };
+    }
+
+    // AI PLAYBOOK DIAGRAM ANALYSIS ROUTE
+    if (action === 'analyze_playbook_image') {
+      var apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+      if (!apiKey) {
+        return jsonResponse({ error: 'GEMINI_API_KEY tidak ditemukan di Properties Script.' });
+      }
+      
+      var base64Data = body.base64_data;
+      var mimeType = body.mime_type || 'image/png';
+      var imageUrl = body.image_url;
+      
+      var imageBlob;
+      if (base64Data) {
+        var bytes = Utilities.base64Decode(base64Data);
+        imageBlob = Utilities.newBlob(bytes, mimeType);
+      } else if (imageUrl) {
+        try {
+          var response = UrlFetchApp.fetch(imageUrl);
+          imageBlob = response.getBlob();
+        } catch(e) {
+          return jsonResponse({ error: 'Gagal mengambil gambar dari URL: ' + e.message });
+        }
+      } else {
+        return jsonResponse({ error: 'Tidak ada data gambar (base64 atau URL) yang disediakan.' });
+      }
+      
+      var base64String = Utilities.base64Encode(imageBlob.getBytes());
+      var gMimeType = imageBlob.getContentType();
+      
+      var promptText = "Analyze this flag football playbook diagram. Identify the routes assigned to each receiver (usually labeled as X, Y, Z, C, H, F, etc.). " +
+                       "For each receiver found in the diagram, specify their name/label and the name of the route they are running (choose from standard flag football routes like Slant, Flat, Hook, Curl, Out, In, Post, Go, Streak, Corner, Wheel, Fade, Screen). " +
+                       "Return the result ONLY as a JSON array of objects, with no markdown code blocks, no extra text, exactly in this format: " +
+                       "[{\"receiver\": \"X\", \"route_name\": \"Slant\"}, {\"receiver\": \"Y\", \"route_name\": \"Flat\"}, ...]";
+                       
+      var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + apiKey;
+      var payload = {
+        contents: [{
+          parts: [
+            { text: promptText },
+            {
+              inlineData: {
+                mimeType: gMimeType,
+                data: base64String
+              }
+            }
+          ]
+        }]
+      };
+      
+      var options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
+      
+      var response = UrlFetchApp.fetch(url, options);
+      var responseText = response.getContentText();
+      var responseJson = JSON.parse(responseText);
+      
+      if (responseJson.candidates && responseJson.candidates[0] && responseJson.candidates[0].content && responseJson.candidates[0].content.parts[0]) {
+        var aiText = responseJson.candidates[0].content.parts[0].text;
+        
+        // Clean markdown code blocks if AI returned them
+        aiText = aiText.replace(/```json/g, '').replace(/```/g, '').trim();
+        
+        try {
+          var parsedRoutes = JSON.parse(aiText);
+          return jsonResponse({ routes: parsedRoutes });
+        } catch(e) {
+          return jsonResponse({ error: 'Gagal memparsing JSON hasil analisis AI: ' + aiText });
+        }
+      } else {
+        return jsonResponse({ error: 'Gagal memanggil Gemini API: ' + responseText });
+      }
+    }
       
       var response = UrlFetchApp.fetch(url, options);
       var responseText = response.getContentText();

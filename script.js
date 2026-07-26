@@ -863,6 +863,93 @@ function updateAssignmentsCount() {
 // Connect add-row button
 addAssignmentRowBtn.addEventListener('click', () => createAssignmentRow());
 
+// Trigger AI analysis of playbook diagram
+const aiAnalyzeBtn = document.getElementById('btn-ai-analyze-diagram');
+if (aiAnalyzeBtn) {
+  aiAnalyzeBtn.addEventListener('click', async () => {
+    let payload = {};
+    if (uploadedImageBase64) {
+      payload.base64_data = uploadedImageBase64;
+      payload.mime_type = uploadedImageType || 'image/png';
+    } else if (playbookImageUrlInput.value) {
+      payload.image_url = playbookImageUrlInput.value;
+    } else {
+      alert('Unggah diagram taktik (gambar) terlebih dahulu sebelum menganalisis rute.');
+      return;
+    }
+    
+    const originalText = aiAnalyzeBtn.innerHTML;
+    aiAnalyzeBtn.disabled = true;
+    aiAnalyzeBtn.innerHTML = `
+      <svg class="spin-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="animation: spin 1s linear infinite;">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      Menganalisis...
+    `;
+    
+    try {
+      const response = await fetch(API_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'analyze_playbook_image',
+          ...payload
+        })
+      });
+      
+      const result = await response.json();
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      const aiRoutes = result.routes || [];
+      if (aiRoutes.length === 0) {
+        alert('AI tidak menemukan rute apa pun di dalam gambar.');
+        return;
+      }
+      
+      // Clear existing rows
+      assignmentRowsContainer.innerHTML = '';
+      
+      // Add each parsed route
+      aiRoutes.forEach(aiRoute => {
+        const receiver = String(aiRoute.receiver).trim().toUpperCase();
+        
+        // Find matching position from cache
+        let positionVal = '';
+        if (receiver === 'QB') positionVal = 'QB';
+        else if (receiver === 'C') positionVal = 'C';
+        else positionVal = 'WR'; // default
+        
+        // Find matching route from cache
+        let routeVal = '';
+        const routeNameLower = String(aiRoute.route_name || '').toLowerCase().trim();
+        
+        const route = cache.routes.find(r => {
+          const nameLower = String(r.route_name || '').toLowerCase().trim();
+          const abbLower = String(r.abbreviation || '').toLowerCase().trim();
+          return nameLower === routeNameLower || 
+                 abbLower === routeNameLower || 
+                 nameLower.indexOf(routeNameLower) !== -1 ||
+                 routeNameLower.indexOf(nameLower) !== -1;
+        });
+        
+        if (route) {
+          routeVal = route.abbreviation;
+        }
+        
+        createAssignmentRow(receiver, positionVal, routeVal);
+      });
+      
+      alert('Analisis rute AI selesai! Silakan periksa rute yang terisi otomatis.');
+    } catch (err) {
+      alert('Gagal menganalisis diagram: ' + err.message + '\nPastikan GEMINI_API_KEY sudah diset di Script Properties.');
+    } finally {
+      aiAnalyzeBtn.disabled = false;
+      aiAnalyzeBtn.innerHTML = originalText;
+    }
+  });
+}
+
 // Playbook Assignments Modal overlay controls
 openAssignmentsModalBtn.addEventListener('click', () => {
   const modalPreviewContainer = document.getElementById('modal-playbook-image-preview-container');
