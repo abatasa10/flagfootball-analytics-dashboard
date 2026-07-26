@@ -1004,13 +1004,22 @@ playbookImageFile.addEventListener('change', (e) => {
 
 // Paste event handler for clipboard images
 document.addEventListener('paste', (e) => {
+  console.log('Paste event detected globally');
   const activeBtn = document.querySelector('.sidebar__nav-item.is-active');
-  if (!activeBtn || activeBtn.getAttribute('data-view') !== 'playbook') return;
+  if (!activeBtn) {
+    console.log('Active navigation button not found');
+    return;
+  }
+  console.log('Active view is:', activeBtn.getAttribute('data-view'));
+  if (activeBtn.getAttribute('data-view') !== 'playbook') return;
   
   const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+  console.log('Clipboard items count:', items.length);
   for (let i = 0; i < items.length; i++) {
+    console.log('Clipboard item type:', items[i].type);
     if (items[i].type.indexOf('image') !== -1) {
       const file = items[i].getAsFile();
+      console.log('Found image file in clipboard:', file.name, file.type, file.size);
       handlePlaybookImage(file);
       break;
     }
