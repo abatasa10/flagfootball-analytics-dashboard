@@ -628,7 +628,8 @@ body {
   gap: 16px;
 }
 
-.vertical-form label {
+.vertical-form label,
+.glass-card__body label {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -638,7 +639,9 @@ body {
 }
 
 .vertical-form input,
-.vertical-form select {
+.vertical-form select,
+.glass-card__body input,
+.glass-card__body select {
   background: var(--input-bg);
   border: 1px solid var(--card-border);
   border-radius: 6px;
@@ -650,14 +653,17 @@ body {
   width: 100%;
 }
 
-.vertical-form input[readonly] {
+.vertical-form input[readonly],
+.glass-card__body input[readonly] {
   background: rgba(255, 255, 255, 0.02);
   color: var(--text-muted);
   cursor: not-allowed;
 }
 
 .vertical-form input:focus,
-.vertical-form select:focus {
+.vertical-form select:focus,
+.glass-card__body input:focus,
+.glass-card__body select:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 10px rgba(244, 184, 63, 0.15);
