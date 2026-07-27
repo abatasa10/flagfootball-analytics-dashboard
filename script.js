@@ -523,12 +523,22 @@ async function loadSessions() {
     cache.sessions = Array.isArray(sessionsData) ? sessionsData : [];
     cache.sessionPlays = Array.isArray(sessionPlaysData) ? sessionPlaysData : [];
 
-    if (!cache.sessions.length) {
-      sessionTableBody.innerHTML = `<tr><td colspan="8" class="table-empty">Belum ada sesi terdaftar.</td></tr>`;
+    const seasonSelect = document.getElementById('season-select');
+    const selectedYear = seasonSelect ? seasonSelect.value : '2026';
+    
+    const filteredSessions = cache.sessions.filter(s => {
+      if (selectedYear === 'ALL') return true;
+      if (!s.date) return false;
+      const year = new Date(s.date).getFullYear();
+      return String(year) === selectedYear;
+    });
+
+    if (!filteredSessions.length) {
+      sessionTableBody.innerHTML = `<tr><td colspan="8" class="table-empty">Belum ada sesi terdaftar untuk Season ${selectedYear}.</td></tr>`;
       return;
     }
 
-    sessionTableBody.innerHTML = cache.sessions.map((s, i) => {
+    sessionTableBody.innerHTML = filteredSessions.map((s, i) => {
       const id = s.session_id || '';
       const isDone = s.status === 'Done' || s.status === 'Selesai';
       const statusClass = isDone ? 'badge badge-accent' : 'badge';
@@ -2339,7 +2349,17 @@ function initDashboard() {
   const currentVal = scrimmageSelect.value || 'ALL';
   scrimmageSelect.innerHTML = '<option value="ALL">Semua Sesi</option>';
   
-  cache.sessions.forEach(s => {
+  const seasonSelect = document.getElementById('season-select');
+  const selectedYear = seasonSelect ? seasonSelect.value : '2026';
+  
+  const filteredSessions = cache.sessions.filter(s => {
+    if (selectedYear === 'ALL') return true;
+    if (!s.date) return false;
+    const year = new Date(s.date).getFullYear();
+    return String(year) === selectedYear;
+  });
+  
+  filteredSessions.forEach(s => {
     const opt = document.createElement('option');
     opt.value = s.session_id;
     let dateStr = s.date || '';
@@ -2355,7 +2375,7 @@ function initDashboard() {
     scrimmageSelect.appendChild(opt);
   });
   
-  if (cache.sessions.some(s => s.session_id === currentVal)) {
+  if (filteredSessions.some(s => s.session_id === currentVal)) {
     scrimmageSelect.value = currentVal;
   } else {
     scrimmageSelect.value = 'ALL';
@@ -2399,10 +2419,20 @@ function initDashboard() {
 }
 
 function calculateDashboardAnalytics(sessionIdFilter = 'ALL') {
+  const seasonSelect = document.getElementById('season-select');
+  const selectedYear = seasonSelect ? seasonSelect.value : '2026';
+  
+  const yearSessions = cache.sessions.filter(s => {
+    if (selectedYear === 'ALL') return true;
+    if (!s.date) return false;
+    const year = new Date(s.date).getFullYear();
+    return String(year) === selectedYear;
+  });
+
   // 1. Filter sessions
   const filteredSessions = sessionIdFilter === 'ALL'
-    ? cache.sessions
-    : cache.sessions.filter(s => s.session_id === sessionIdFilter);
+    ? yearSessions
+    : yearSessions.filter(s => s.session_id === sessionIdFilter);
     
   const filteredSessionIds = filteredSessions.map(s => String(s.session_id).trim());
   
@@ -3019,8 +3049,22 @@ function initPlayerAnalysis() {
       `;
       
       try {
-        const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(selectedId).trim());
-        const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(selectedId).trim());
+        const seasonSelect = document.getElementById('season-select');
+        const selectedYear = seasonSelect ? seasonSelect.value : '2026';
+        
+        const yearSessionIds = cache.sessions
+          .filter(s => {
+            if (selectedYear === 'ALL') return true;
+            if (!s.date) return false;
+            const year = new Date(s.date).getFullYear();
+            return String(year) === selectedYear;
+          })
+          .map(s => String(s.session_id).trim());
+          
+        const yearPlays = cache.sessionPlays.filter(p => yearSessionIds.includes(String(p.session_id).trim()));
+
+        const qbPlays = yearPlays.filter(p => String(p.qb_player_id).trim() === String(selectedId).trim());
+        const rcPlays = yearPlays.filter(p => String(p.target_player_id).trim() === String(selectedId).trim());
         const hasQB = qbPlays.length > 0;
         const hasRC = rcPlays.length > 0;
 
@@ -3192,8 +3236,22 @@ function renderPlayerAnalysis(playerId) {
   document.getElementById('analysis-player-year').textContent = experience;
   
   // 2. Perform stats aggregation
-  const qbPlays = cache.sessionPlays.filter(p => String(p.qb_player_id).trim() === String(playerId).trim());
-  const rcPlays = cache.sessionPlays.filter(p => String(p.target_player_id).trim() === String(playerId).trim());
+  const seasonSelect = document.getElementById('season-select');
+  const selectedYear = seasonSelect ? seasonSelect.value : '2026';
+  
+  const yearSessionIds = cache.sessions
+    .filter(s => {
+      if (selectedYear === 'ALL') return true;
+      if (!s.date) return false;
+      const year = new Date(s.date).getFullYear();
+      return String(year) === selectedYear;
+    })
+    .map(s => String(s.session_id).trim());
+    
+  const yearPlays = cache.sessionPlays.filter(p => yearSessionIds.includes(String(p.session_id).trim()));
+
+  const qbPlays = yearPlays.filter(p => String(p.qb_player_id).trim() === String(playerId).trim());
+  const rcPlays = yearPlays.filter(p => String(p.target_player_id).trim() === String(playerId).trim());
   
   const hasQBStats = qbPlays.length > 0;
   const hasRCStats = rcPlays.length > 0;
@@ -3478,7 +3536,7 @@ function renderPlayerAnalysis(playerId) {
 
 window.switchView = switchView;
 
-// ---------- 10. Mobile Menu Drawer Controls ----------
+// ---------- 10. Mobile Menu & Season Select Drawer Controls ----------
 document.addEventListener('DOMContentLoaded', () => {
   const mobileMenuToggle = document.getElementById('mobile-menu-toggle');
   const sidebar = document.querySelector('.sidebar');
@@ -3504,6 +3562,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const navItems = document.querySelectorAll('.sidebar__nav-item');
     navItems.forEach(item => {
       item.addEventListener('click', closeMobileSidebar);
+    });
+  }
+
+  // Season Select listener to trigger instant view recalculation
+  const seasonSelect = document.getElementById('season-select');
+  if (seasonSelect) {
+    seasonSelect.addEventListener('change', () => {
+      const activeNavBtn = document.querySelector('.sidebar__nav-item.is-active');
+      if (activeNavBtn) {
+        const activeView = activeNavBtn.dataset.view;
+        if (activeView === 'dashboard') {
+          initDashboard();
+        } else if (activeView === 'session') {
+          loadSessions();
+        } else if (activeView === 'player-analysis') {
+          initPlayerAnalysis();
+        }
+      }
     });
   }
 });

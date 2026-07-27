@@ -245,7 +245,7 @@ body {
   gap: 12px;
 }
 
-.season-badge {
+.season-select {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--card-border);
   padding: 6px 14px;
@@ -253,6 +253,18 @@ body {
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--text-secondary);
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+}
+
+.season-select option {
+  background: var(--bg-sidebar);
+  color: var(--text-primary);
+}
+
+.season-select:focus {
+  border-color: var(--accent);
 }
 
 .btn-refresh {
